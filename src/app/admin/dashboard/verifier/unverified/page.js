@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { AlertCircle } from "lucide-react";
+import { Badge } from '@/components/ui/badge';
+
+import { AlertCircle  , FileText} from "lucide-react";
 import VerifierCard from "@/components/ui/VerifierCard";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -28,7 +30,6 @@ export default function UnverifiedVerifiers() {
       });
       console.log(`${BASE_URL}/api/verifier/unverified?flag=false`)
       const unverified = res.data.verifiers || [];
-
       if (unverified.length === 0) {
         toast.success("No unverified verifiers left. Redirecting...");
         setTimeout(() => {
@@ -144,6 +145,10 @@ export default function UnverifiedVerifiers() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">UnVerified Verifiers</h1>
+        <Badge  variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-26 h-8">
+          <FileText className="w-8 h-8 mr-1" />
+          Count : {verifiers.length}
+        </Badge>
         <button
           onClick={() => router.push("/admin/dashboard")}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -162,8 +167,8 @@ export default function UnverifiedVerifiers() {
             <VerifierCard
               key={verifier._id}
               verifier={verifier}
-              onDelete={() => { handleDelete(verifier._id)}}
-              onVerify={() => { handleVerify(verifier._id)}}
+              onDelete={() => { handleDelete(verifier._id) }}
+              onVerify={() => { handleVerify(verifier._id) }}
             />
           ))}
         </div>

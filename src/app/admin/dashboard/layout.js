@@ -14,7 +14,8 @@ import {
   User,
   LogOut,
   ChevronDown,
-  ChevronRight
+  ChevronRight , 
+  Contact
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -36,13 +37,11 @@ export default function DashboardLayout({ children }) {
       label: 'Farmer', 
       href: '/admin/users',
       subItems: [
-        { label: 'All Farmers', href: '/admin/dashboard/farmer/all' },
-        { label: 'Add Farmer', href: '/admin/farmer/add' },
-        { label: 'Roles', href: '/admin/farmer/roles' }
+        { label: 'All Farmers', href: '/admin/dashboard/farmer/all' }
       ]
     },
     { 
-      icon: Package, 
+      icon: Contact, 
       label: 'Verifier', 
       href: '/admin/dashboard/verifier',
       subItems: [

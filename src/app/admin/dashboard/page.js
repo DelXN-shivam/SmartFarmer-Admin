@@ -10,7 +10,7 @@ export default function Dashboard() {
     const [verifierCount, setVerifierCount] = useState();
     const [loading, setLoading] = useState(false);
     const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-
+    
     const token = typeof window !== "undefined"
         ? localStorage.getItem('Authorization')?.split(' ')[1]
         : null;

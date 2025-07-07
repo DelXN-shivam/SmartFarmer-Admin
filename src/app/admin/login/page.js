@@ -10,6 +10,8 @@ export default function LoginPage() {
         email: '',
         password: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const router = useRouter();
 
     const handleChange = (e) => {
@@ -17,10 +19,21 @@ export default function LoginPage() {
             ...formData,
             [e.target.name]: e.target.value
         });
+        // Clear error when user starts typing
+        if (error) setError('');
     };
 
     const handleSubmit = async () => {
         try {
+            setLoading(true);
+            setError('');
+            
+            // Basic validation
+            if (!formData.email || !formData.password) {
+                setError('Please fill in all fields');
+                return;
+            }
+
             const res = await axios.post(`${BASE_URL}/api/admin/login`, formData);
             const data = res.data;
 
@@ -29,15 +42,24 @@ export default function LoginPage() {
                 localStorage.setItem('Authorization', token);
                 router.push('/admin/dashboard');
             } else {
-                console.log('Error while admin login');
+                setError('Invalid credentials or server error');
             }
         } catch (err) {
-            console.log('Inside catch, error:', err.response?.data || err.message);
+            console.error('Login error:', err);
+            const errorMessage = 'Login failed. Please try again.';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
         }
-
-        console.log('Login attempt:', formData);
     };
 
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -49,6 +71,13 @@ export default function LoginPage() {
                             Sign in to access the admin panel
                         </p>
                     </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700">
+                            <p>{error}</p>
+                        </div>
+                    )}
 
                     <div className="space-y-6">
                         <div>
@@ -97,9 +126,12 @@ export default function LoginPage() {
 
                         <button
                             onClick={handleSubmit}
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                            disabled={loading}
+                            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 ${
+                                loading ? 'opacity-70 cursor-not-allowed' : ''
+                            }`}
                         >
-                            Sign In
+                            {loading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </div>
                 </div>

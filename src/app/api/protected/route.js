@@ -1,18 +1,19 @@
-// /app/api/protected/route.js
 import jwt from 'jsonwebtoken';
 
-export async function GET(req) {
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.split(' ')[1];
+export const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return new Response(JSON.stringify({ error: 'No token provided' }), { status: 401 });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
+
+  const token = authHeader.split(" ")[1];
 
   try {
-    const user = jwt.verify(token, process.env.JWT_SECRET);
-    return new Response(JSON.stringify({ message: 'Success', user }), { status: 200 });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // attach user to request
+    next(); // ✅ go to the next middleware or controller
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 403 });
+    return res.status(403).json({ message: "Forbidden", error: err.message });
   }
-}
+};
