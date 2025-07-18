@@ -2,7 +2,10 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import FarmerCard from "@/components/ui/FarmerCard";
-import { X } from 'lucide-react';
+import { X, XCircle } from 'lucide-react';
+import GoToTopButton from "@/components/ui/GoToTopButton";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function FarmersPage() {
   const [loading, setLoading] = useState(true);
@@ -10,7 +13,7 @@ export default function FarmersPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
+  const router = useRouter();
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
   const getAllFarmers = async () => {
@@ -18,13 +21,15 @@ export default function FarmersPage() {
       setLoading(true);
       const token = localStorage.getItem("Authorization")?.split(" ")[1];
       if (!token) {
-        throw new Error("Authentication token not found");
+        toast.error('Authentication token not found. Redirecting...');
+        router.push('/admin/login');
+        return;
       }
 
       const res = await axios.get(`${BASE_URL}/api/farmer`, {
         headers: {
           Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
       });
 
@@ -34,6 +39,13 @@ export default function FarmersPage() {
     } catch (err) {
       console.error("Error fetching farmers:", err);
       setError(err.response?.data?.message || err.message || "Failed to fetch farmers");
+      
+      // Handle unauthorized access
+      if (err.response?.status === 401) {
+        toast.error('Authentication fialed please login again');
+        localStorage.removeItem("Authorization");
+        router.push('/admin/login');
+      }
     } finally {
       setLoading(false);
     }
@@ -44,14 +56,12 @@ export default function FarmersPage() {
   }, []);
 
   const filteredFarmers = farmers.filter(farmer => {
-    // Apply search filter
-    const matchesSearch = farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Apply status filter
-    const matchesStatus = statusFilter === "all" || 
-                         farmer.applicationStatus === statusFilter;
+    const matchesStatus = statusFilter === "all" ||
+      farmer.applicationStatus === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -93,9 +103,8 @@ export default function FarmersPage() {
     <div className="p-4 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          {/* Search Input */}
           <div className="relative flex-grow">
             <input
               type="text"
@@ -113,22 +122,12 @@ export default function FarmersPage() {
               </button>
             )}
           </div>
-
-          {/* Status Filter */}
-          <select
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
         </div>
       </div>
 
-      <FarmerCard farmers={filteredFarmers} />
+      <FarmerCard farmers={filteredFarmers} type={"Farmer"} />
+
+      <GoToTopButton />
     </div>
   );
 }

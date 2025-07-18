@@ -45,8 +45,11 @@ export default function DashboardLayout({ children }) {
       label: 'Verifier', 
       href: '/admin/dashboard/verifier',
       subItems: [
-        { label: 'Verified', href: '/admin/dashboard/verifier/verified' },
-        { label: 'Unverified', href: '/admin/dashboard/verifier/unverified' }
+        { label: 'All Verifiers', href: '/admin/dashboard/verifier/all' },
+        //{ label: 'Verified', href: '/admin/dashboard/verifier/verified' },
+        //{ label: 'Unverified', href: '/admin/dashboard/verifier/unverified' },
+        { label: 'Add Verifier', href: '/admin/dashboard/verifier/add' }
+        
       ]
     },
     { 

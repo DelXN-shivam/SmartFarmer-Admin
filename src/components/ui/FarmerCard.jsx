@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Phone, Mail, FileText, CheckCircle, XCircle, Clock, User, Navigation, Eye, EyeOff, X } from 'lucide-react';
 
-const FarmerCard = ({ farmers }) => {
+const FarmerCard = ({ farmers, type }) => {
   const [selectedFarmer, setSelectedFarmer] = useState(null);
 
   const getStatusColor = (status) => {
@@ -41,10 +41,10 @@ const FarmerCard = ({ farmers }) => {
   };
 
   const FarmerDetailOverlay = ({ farmer, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-white/10 backdrop-blur-lg shadow-lg rounded-2xl p-4 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Farmer Details</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{type == 'Farmer' ? 'Farmer' : "Verifier"} Details</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
@@ -53,10 +53,10 @@ const FarmerCard = ({ farmers }) => {
             <X className="w-6 h-6 text-gray-500" />
           </button>
         </div>
-        
+
         <div className="p-6">
           <Card className="w-full shadow-none border-0">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 border-b px-0 pt-0">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 border-b px-3 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -67,19 +67,9 @@ const FarmerCard = ({ farmers }) => {
                     <p className="text-sm text-gray-600">ID: {farmer._id?.slice(-8)}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={`${getStatusColor(farmer.applicationStatus)} flex items-center space-x-1`}>
-                    {getStatusIcon(farmer.applicationStatus)}
-                    <span className="capitalize">{farmer.applicationStatus || 'pending'}</span>
-                  </Badge>
-                  <Badge variant={farmer.isVerified ? "default" : "secondary"} className="flex items-center space-x-1">
-                    {farmer.isVerified ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                    <span>{farmer.isVerified ? 'Verified' : 'Unverified'}</span>
-                  </Badge>
-                </div>
               </div>
             </CardHeader>
-            
+
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Contact Information */}
@@ -110,9 +100,10 @@ const FarmerCard = ({ farmers }) => {
                     <div className="flex items-start space-x-3">
                       <MapPin className="w-4 h-4 text-green-600 mt-0.5" />
                       <div className="text-gray-700">
-                        <p className="font-medium">{farmer.village}</p>
-                        {farmer.landMark && <p className="text-sm text-gray-600">{farmer.landMark}</p>}
-                        <p className="text-sm">{farmer.taluka}, {farmer.district}</p>
+                        <p className="font-medium">Village : {farmer.village}</p>
+                        {farmer.landMark && <p className="text-sm text-gray-600">Land Mark : {farmer.landMark}</p>}
+                        <p className="text-sm">Taluka : {farmer.taluka} </p>
+                        <p className="text-sm">District : {farmer.district}</p>
                         <p className="text-sm">PIN: {farmer.pincode}</p>
                       </div>
                     </div>
@@ -144,7 +135,7 @@ const FarmerCard = ({ farmers }) => {
               )}
 
               {/* Crops Section */}
-              <div className="mt-6 pt-4 border-t">
+              {type == 'Farmer' ? <div className="mt-6 pt-4 border-t">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Crops Information</h3>
                 {farmer.crops && farmer.crops.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -157,7 +148,7 @@ const FarmerCard = ({ farmers }) => {
                 ) : (
                   <p className="text-gray-500 text-sm">No crops information available</p>
                 )}
-              </div>
+              </div> : <div></div>}
             </CardContent>
           </Card>
         </div>
@@ -176,11 +167,10 @@ const FarmerCard = ({ farmers }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Farmers List</h2>
       <p className="text-gray-600 mb-4">
-        Showing {farmers.length} farmer{farmers.length !== 1 ? 's' : ''}
+        Showing {farmers.length} {(type == 'Farmer' ? 'Farmer' : "Verifier")}{farmers.length !== 1 ? 's' : ''}
       </p>
-      
+
       <div className="space-y-4">
         {farmers.map((farmer) => (
           <div key={farmer._id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-200">
@@ -191,10 +181,10 @@ const FarmerCard = ({ farmers }) => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">{farmer.name}</h3>
-                  <p className="text-sm text-gray-600">{farmer.district} • {farmer.village}</p>
+                  <p className="text-sm text-gray-600">District : {farmer.district} • Village : {farmer.village}</p>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => openFarmerDetails(farmer)}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors duration-200"
@@ -209,9 +199,9 @@ const FarmerCard = ({ farmers }) => {
 
       {/* Overlay Modal */}
       {selectedFarmer && (
-        <FarmerDetailOverlay 
-          farmer={selectedFarmer} 
-          onClose={closeFarmerDetails} 
+        <FarmerDetailOverlay
+          farmer={selectedFarmer}
+          onClose={closeFarmerDetails}
         />
       )}
     </div>

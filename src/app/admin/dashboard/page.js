@@ -10,7 +10,7 @@ export default function Dashboard() {
     const [verifierCount, setVerifierCount] = useState();
     const [loading, setLoading] = useState(false);
     const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-    
+
     const token = typeof window !== "undefined"
         ? localStorage.getItem('Authorization')?.split(' ')[1]
         : null;
@@ -62,7 +62,7 @@ export default function Dashboard() {
                         {loading ? (
                             <span className="inline-block h-6 w-24 bg-gray-200 rounded animate-pulse" />
                         ) : (
-                            value 
+                            value
                         )}
                     </p>
                 </div>
@@ -74,9 +74,10 @@ export default function Dashboard() {
     );
 
     useEffect(() => {
+        console.log("Dashboard mounted");
         getFarmerCount();
         getVerifierCount();
-    }, [farmerCount, verifierCount])
+    }, [])
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
