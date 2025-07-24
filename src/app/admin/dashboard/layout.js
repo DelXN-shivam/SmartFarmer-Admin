@@ -218,14 +218,14 @@ export default function DashboardLayout({ children }) {
                 <Menu className="w-5 h-5" />
               </button>
               
-              <div className="relative ml-4 lg:ml-0">
+              {/* <div className="relative ml-4 lg:ml-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search..."
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
                 />
-              </div>
+              </div> */}
             </div>
 
             <div className="flex items-center space-x-4">

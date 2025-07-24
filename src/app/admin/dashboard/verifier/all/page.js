@@ -2,7 +2,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import FarmerCard from "@/components/ui/FarmerCard";
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import GoToTopButton from "@/components/ui/GoToTopButton";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -34,20 +34,20 @@ export default function VerifiersPage() {
 
       if (res.status === 200) {
         setVerifiers(res.data.data);
-        
+
       }
 
-      
+
     } catch (err) {
       console.error("Error fetching verifier:", err);
       setError(err.response?.data?.message || err.message || "Failed to fetch verifier");
 
-      if(err.response?.status == 401){
+      if (err.response?.status == 401) {
         toast.error('Authentication Failed , redirecting to login page');
         localStorage.removeItem('Authorization');
         setTimeout(() => {
           router.push('/admin/login')
-        } , 3000)
+        }, 3000)
       }
     } finally {
       setLoading(false);
@@ -103,32 +103,38 @@ export default function VerifiersPage() {
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-sDirectart md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-center  items-sDirectart md:items-center mb-8 gap-10">
         <h1 className="text-3xl font-bold text-gray-900">Verifier Directory</h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row 
+         w-full md:w-auto">
           {/* Search Input */}
-          <div className="relative flex-grow">
-            <input
-              type="text"
-              placeholder="Search by name, village or district..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
+          <div>
+            <div className="relative flex-grow">
+              <input
+                type="text"
+                placeholder="Search by name, village or district..."
+                className="w-80 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+            </div>
           </div>
+          {/* <div className="flex items-center">
+            <Search />
+          </div> */}
         </div>
       </div>
 
-      <FarmerCard farmers={filteredVerifier} type = {"Verifier"} />
+      <FarmerCard farmers={filteredVerifier} type={"Verifier"} />
 
       <GoToTopButton />
     </div>
