@@ -13,6 +13,8 @@ export default function FarmersPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [crops, setCrops] = useState([]);
+  const [cropIds, setCropIds] = useState([])
   const router = useRouter();
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -35,11 +37,14 @@ export default function FarmersPage() {
 
       if (res.status === 200) {
         setFarmers(res.data.data);
+        const allCropIds = res.data.data.flatMap(farmer => farmer.crops);
+        setCropIds(allCropIds);
+
       }
     } catch (err) {
       console.error("Error fetching farmers:", err);
       setError(err.response?.data?.message || err.message || "Failed to fetch farmers");
-      
+
       // Handle unauthorized access
       if (err.response?.status === 401) {
         toast.error('Authentication fialed please login again');
@@ -51,9 +56,29 @@ export default function FarmersPage() {
     }
   };
 
+  const getAllCrops = async () => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/crop/get-by-ids`,
+        { ids: cropIds }
+      )
+
+      if (res.status = 200) {
+        setCrops(res.data.crops);
+      }
+    } catch (err) {
+      console.log("error", err);
+      toast.error(err.message);
+    }
+  }
   useEffect(() => {
     getAllFarmers();
   }, []);
+
+  useEffect(() => {
+    if (cropIds.length > 0) {
+      getAllCrops();
+    }
+  }, [cropIds]);
 
   const filteredFarmers = farmers.filter(farmer => {
     const matchesSearch = farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,7 +150,7 @@ export default function FarmersPage() {
         </div>
       </div>
 
-      <FarmerCard farmers={filteredFarmers} type={"Farmer"} />
+      <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
 
       <GoToTopButton />
     </div>

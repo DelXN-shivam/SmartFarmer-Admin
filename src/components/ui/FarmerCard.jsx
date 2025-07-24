@@ -219,7 +219,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { MapPin, Phone, Mail, FileText, CheckCircle, XCircle, Clock, User, Navigation, Eye, X } from "lucide-react"
 
-const FarmerCard = ({ farmers, type }) => {
+const FarmerCard = ({ farmers, type, crops }) => {
   const [selectedFarmer, setSelectedFarmer] = useState(null)
 
   const getStatusColor = (status) => {
@@ -234,6 +234,13 @@ const FarmerCard = ({ farmers, type }) => {
         return "bg-gray-100 text-gray-800 border-gray-300"
     }
   }
+
+  const getCropNames = (ids) => {
+    return ids
+      .map(id => crops.find(crop => crop._id === id)?.name)
+      .filter(Boolean) // Remove undefineds
+      .join(', ');
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -417,22 +424,10 @@ const FarmerCard = ({ farmers, type }) => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">Crops Information</h3>
               </div>
-              {farmer.crops && farmer.crops.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {farmer.crops.map((crop, index) => (
-                    <div
-                      key={index}
-                      className="bg-white p-3 rounded-lg shadow-sm border border-orange-100 text-center hover:shadow-md transition-shadow"
-                    >
-                      <span className="text-sm font-medium text-gray-900">{crop}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-orange-100 text-center">
-                  <p className="text-gray-500">No crops information available</p>
-                </div>
-              )}
+              <p className="mt-2 text-sm">
+                <span className="font-medium">Crops:</span>{" "}
+                {getCropNames(farmer.crops) || "NA"}
+              </p>
             </div>
           )}
         </div>

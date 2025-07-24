@@ -365,10 +365,8 @@ const AddVerifierPage = () => {
     landMark: '',
     taluka: '',
     district: '',
-    state: '',
-    pincode: '',
-    password: '',
-    confirmPassword: ''
+    state: stateMaharashtra,
+    pincode: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -516,10 +514,7 @@ const AddVerifierPage = () => {
     if (!formData.village.trim()) newErrors.village = 'Village is required';
     if (!formData.taluka.trim()) newErrors.taluka = 'Taluka is required';
     if (!formData.district.trim()) newErrors.district = 'District is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
-    if (!formData.password.trim()) newErrors.password = 'Password is required';
-    if (!formData.confirmPassword.trim()) newErrors.confirmPassword = 'Confirm password is required';
 
     // Email validation
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
@@ -546,23 +541,15 @@ const AddVerifierPage = () => {
       newErrors.pincode = 'Please enter a valid 6-digit pincode';
     }
 
-    // Password validation
-    if (formData.password && formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
-    }
-
-    // Confirm password validation
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting form...", formData); // Add this
     if (!validateForm()) {
+      console.log("Validation failed", errors); // Add this
       return;
     }
     setIsSubmitting(true);
@@ -578,7 +565,7 @@ const AddVerifierPage = () => {
 
       const { confirmPassword, ...submitData } = formData;
       const response = await axios.post(
-        `${BASE_URL}/api/verifier/add`,
+        `${BASE_URL}/api/verifier/register`,
         submitData,
         {
           headers: {
@@ -604,7 +591,7 @@ const AddVerifierPage = () => {
           landMark: '',
           taluka: '',
           district: '',
-          state: '',
+          state: 'Maharashtra',
           pincode: '',
           password: '',
           confirmPassword: '',
@@ -813,18 +800,18 @@ const AddVerifierPage = () => {
                     placeholder="Select or type district"
                   />
                   {showDistrictDropdown && districtSuggestions.length > 0 && (
-                    <ul 
-                    ref={districtDropdownRef}
-                    className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    <ul
+                      ref={districtDropdownRef}
+                      className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                       {districtSuggestions.map((district) => (
                         <li
                           key={district}
                           className="px-4 py-2 hover:bg-green-100 cursor-pointer"
-                          
+
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDistrictSelect(district);
-                            
+
                           }}
                         >
                           {district}
@@ -854,9 +841,9 @@ const AddVerifierPage = () => {
                     placeholder={!formData.district ? "Select district first" : "Select or type taluka"}
                   />
                   {showTalukaDropdown && talukaSuggestions.length > 0 && (
-                    <ul 
-                    ref={talukaDropdownRef}
-                    className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    <ul
+                      ref={talukaDropdownRef}
+                      className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                       {talukaSuggestions.map((taluka) => (
                         <li
                           key={taluka}
@@ -865,7 +852,7 @@ const AddVerifierPage = () => {
                             e.stopPropagation();
                             handleTalukaSelect(taluka);
                           }}
-                          
+
                         >
                           {taluka}
                         </li>
@@ -885,7 +872,7 @@ const AddVerifierPage = () => {
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.village ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter village name"
                     autoComplete="off"
-                    disabled={!isTalukaFilled }
+                    disabled={!isTalukaFilled}
                   />
                   {errors.village && <p className="text-red-500 text-sm mt-1">{errors.village}</p>}
                 </div>
@@ -899,7 +886,7 @@ const AddVerifierPage = () => {
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Enter nearby landmark"
-                    disabled={!isTalukaFilled }
+                    disabled={!isTalukaFilled}
                   />
                 </div>
                 {/* Pincode */}
@@ -913,7 +900,7 @@ const AddVerifierPage = () => {
                     maxLength={6}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.pincode ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter pincode"
-                    disabled={!isTalukaFilled }
+                    disabled={!isTalukaFilled}
                   />
                   {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
                 </div>
