@@ -1,75 +1,144 @@
-"use client";
-import axios from "axios";
-import { useEffect, useState } from "react";
-import FarmerCard from "@/components/ui/FarmerCard";
-import { X, Search } from 'lucide-react';
-import GoToTopButton from "@/components/ui/GoToTopButton";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+"use client"
+
+import axios from "axios"
+import { useEffect, useState, useCallback } from "react"
+import { X } from "lucide-react"
+import GoToTopButton from "@/components/ui/GoToTopButton"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import VerifierCard from "@/components/ui/VerifierCard"
 
 export default function VerifiersPage() {
-  const [loading, setLoading] = useState(true);
-  const [verifier, setVerifiers] = useState([]);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const router = useRouter();
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+  const [loading, setLoading] = useState(true)
+  const [verifiers, setVerifiers] = useState([])
+  const [error, setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const router = useRouter()
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
 
-  const getAllVerifiers = async () => {
+  // Memoized fetch function with proper error handling
+  const getAllVerifiers = useCallback(async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem("Authorization")?.split(" ")[1];
+      setLoading(true)
+      setError(null)
+
+      const token = localStorage.getItem("Authorization")?.split(" ")[1]
       if (!token) {
-        toast.error('Authentication token not found . Redirecting ...')
-        router.push('/admin/login')
+        toast.error("Session expired. Please login again.")
+        router.push("/admin/login")
+        return
       }
 
-      const res = await axios.get(`${BASE_URL}/api/verifier`, {
+      const response = await axios.get(`${BASE_URL}/api/verifier`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      });
+      })
 
-      if (res.status === 200) {
-        setVerifiers(res.data.data);
-
+      if (response.status === 200 && response.data?.data) {
+        setVerifiers(response.data.data)
+      } else {
+        throw new Error("Invalid response structure")
       }
-
-
     } catch (err) {
-      console.error("Error fetching verifier:", err);
-      setError(err.response?.data?.message || err.message || "Failed to fetch verifier");
+      console.error("Error fetching verifiers:", err)
+      const errorMessage = err.response?.data?.message ||
+        err.message ||
+        "Failed to fetch verifiers"
+      setError(errorMessage)
 
-      if (err.response?.status == 401) {
-        toast.error('Authentication Failed , redirecting to login page');
-        localStorage.removeItem('Authorization');
-        setTimeout(() => {
-          router.push('/admin/login')
-        }, 3000)
+      if (err.response?.status === 401) {
+        localStorage.removeItem("Authorization")
+        toast.error("Session expired. Redirecting to login...")
+        setTimeout(() => router.push("/admin/login"), 2000)
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [BASE_URL, router])
 
   useEffect(() => {
-    getAllVerifiers();
-  }, []);
+    getAllVerifiers()
+  }, [getAllVerifiers])
 
-  const filteredVerifier = verifier.filter(verifier => {
-    // Apply search filter
-    const matchesSearch = verifier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      verifier.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      verifier.district.toLowerCase().includes(searchTerm.toLowerCase());
+  const handleVerifyVerifier = async (verifierToVerify) => {
+    try {
+      const token = localStorage.getItem("Authorization")?.split(" ")[1]
+      if (!token) {
+        toast.error("Authentication required")
+        return router.push("/admin/login")
+      }
 
-    // Apply status filter
-    const matchesStatus = statusFilter === "all" ||
-      verifier.applicationStatus === statusFilter;
+      const response = await axios.put(
+        `${BASE_URL}/api/verifier/${verifierToVerify._id}/verify`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
 
-    return matchesSearch && matchesStatus;
-  });
+      if (response.status === 200) {
+        setVerifiers(prev =>
+          prev.map(v =>
+            v._id === verifierToVerify._id ? { ...v, isVerified: true } : v
+          )
+        )
+        toast.success(`Verified ${verifierToVerify.name} successfully!`)
+      }
+    } catch (err) {
+      console.error("Verification failed:", err)
+      toast.error(`Failed to verify ${verifierToVerify.name}: ${err.response?.data?.message || "Server error"}`)
+    }
+  }
+
+  const handleEditVerifier = async (updatedVerifier) => {
+    try {
+      const token = localStorage.getItem("Authorization")?.split(" ")[1]
+      if (!token) {
+        toast.error("Authentication required")
+        return router.push("/admin/login")
+      }
+
+      const response = await axios.patch(
+        `${BASE_URL}/api/verifier/update/${updatedVerifier._id}`,
+        updatedVerifier,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      if (response.status === 200) {
+        setVerifiers(prev =>
+          prev.map(v =>
+            v._id === updatedVerifier._id ? response.data.data : v
+          )
+        )
+        toast.success("Verifier updated successfully!")
+        setTimeout(() => {
+          getAllVerifiers();
+        } , 1500)
+      }
+    } catch (err) {
+      console.error("Update failed:", err)
+      toast.error(`Update failed: ${err.response?.data?.message || "Server error"}`)
+    }
+  }
+
+  // Optimized filtering
+  const filteredVerifiers = verifiers.filter(verifier => {
+    if (!verifier || typeof verifier !== "object") return false
+
+    const searchLower = searchTerm.toLowerCase()
+    const name = verifier.name || ""
+    const village = verifier.village || ""
+    const district = verifier.district || ""
+
+    return (
+      (name.toLowerCase().includes(searchLower) ||
+        village.toLowerCase().includes(searchLower) ||
+        district.toLowerCase().includes(searchLower)) &&
+      (statusFilter === "all" || verifier.applicationStatus === statusFilter)
+    )
+  })
+
 
   if (loading) {
     return (
@@ -77,7 +146,7 @@ export default function VerifiersPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         <p className="ml-4 text-gray-600">Loading Verifiers...</p>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -98,45 +167,56 @@ export default function VerifiersPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-center  items-sDirectart md:items-center mb-8 gap-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Verifier Directory</h1>
 
-        <div className="flex flex-col sm:flex-row 
-         w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg"
+          >
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
           {/* Search Input */}
-          <div>
-            <div className="relative flex-grow">
-              <input
-                type="text"
-                placeholder="Search by name, village or district..."
-                className="w-80 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search verifiers..."
+              className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                aria-label="Clear search"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
-          {/* <div className="flex items-center">
-            <Search />
-          </div> */}
         </div>
       </div>
 
-      <FarmerCard farmers={filteredVerifier} type={"Verifier"} />
+      <VerifierCard
+        verifiers={filteredVerifiers}
+        onVerify={handleVerifyVerifier}
+        onEdit={handleEditVerifier}
+      />
 
       <GoToTopButton />
     </div>
-  );
+  )
 }

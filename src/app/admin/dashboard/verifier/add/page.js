@@ -347,297 +347,383 @@ const maharashtraDistricts = {
   ],
 };
 
-const cityToDistrict = {};
+const cityToDistrict = {}
 for (const [district, locations] of Object.entries(maharashtraDistricts)) {
   for (const loc of locations) {
-    cityToDistrict[loc.toLowerCase()] = district;
+    cityToDistrict[loc.toLowerCase()] = district
   }
 }
 
 const AddVerifierPage = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    contact: '',
-    aadhaarNumber: '',
-    age: '',
-    village: '',
-    landMark: '',
-    taluka: '',
-    district: '',
+    name: "",
+    email: "",
+    contact: "",
+    aadhaarNumber: "",
+    age: "",
+    village: "",
+    landMark: "",
+    taluka: "", // Changed from [] to ""
+    district: "",
     state: stateMaharashtra,
-    pincode: ''
-  });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const router = useRouter();
-  const [suggestions, setSuggestions] = useState([]);
-  const [districtSuggestions, setDistrictSuggestions] = useState([]);
-  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+    pincode: "",
+  })
 
-  const [talukaSuggestions, setTalukaSuggestions] = useState([]);
-  const [showTalukaDropdown, setShowTalukaDropdown] = useState(false);
-  const isDistrictFilled = !!formData.district;
-  const isTalukaFilled = !!formData.taluka;
-  const districtDropdownRef = useRef(null);
-  const talukaDropdownRef = useRef(null);
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
+  const router = useRouter()
+  const [suggestions, setSuggestions] = useState([])
+  const [districtSuggestions, setDistrictSuggestions] = useState([])
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
 
-  const districts = Object.keys(maharashtraDistricts);
+  // New states for Allocate Talukas
+  const [allocatedTalukas, setAllocatedTalukas] = useState([])
+  const [currentAllocatedTaluka, setCurrentAllocatedTaluka] = useState("")
+  const [allocatedTalukaSuggestions, setAllocatedTalukaSuggestions] = useState([])
+  const [showAllocatedTalukaDropdown, setShowAllocatedTalukaDropdown] = useState(false)
 
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+  const isDistrictFilled = !!formData.district
+  const isTalukaFilled = !!formData.taluka // Changed from formData.taluka && formData.taluka.length > 0
 
+  const districtDropdownRef = useRef(null)
+  const allocatedTalukaDropdownRef = useRef(null)
+
+  const districts = Object.keys(maharashtraDistricts)
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+
+  const [talukaSuggestions, setTalukaSuggestions] = useState([])
+  const [showTalukaDropdown, setShowTalukaDropdown] = useState(false)
+  const talukaDropdownRef = useRef(null)
 
   useEffect(() => {
-    const handleClickOutside = () => setSuggestions([]);
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+    const handleClickOutside = (event) => {
+      // Close village suggestions
+      setSuggestions([])
+
+      // Close district dropdown if click is outside
+      if (districtDropdownRef.current && !districtDropdownRef.current.contains(event.target)) {
+        setShowDistrictDropdown(false)
+      }
+
+      // Close allocated taluka dropdown if click is outside
+      if (allocatedTalukaDropdownRef.current && !allocatedTalukaDropdownRef.current.contains(event.target)) {
+        setShowAllocatedTalukaDropdown(false)
+      }
+
+      // Close taluka dropdown if click is outside
+      if (talukaDropdownRef.current && !talukaDropdownRef.current.contains(event.target)) {
+        setShowTalukaDropdown(false)
+      }
+    }
+
+    document.addEventListener("click", handleClickOutside)
+    return () => document.removeEventListener("click", handleClickOutside)
+  }, [])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData(prev => ({
+    const { name, value } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }));
+      [name]: value,
+    }))
 
     // Auto-complete logic for village/district/state
-    if (name === 'village') {
-      const villageLower = value.toLowerCase();
-
+    if (name === "village") {
+      const villageLower = value.toLowerCase()
       // Find matching villages
-      const matches = [];
+      const matches = []
       for (const [district, locations] of Object.entries(maharashtraDistricts)) {
         for (const loc of locations) {
           if (loc.toLowerCase().includes(villageLower)) {
-            matches.push(loc);
-            if (matches.length >= 5) break; // Limit suggestions
+            matches.push(loc)
+            if (matches.length >= 5) break // Limit suggestions
           }
         }
       }
-      setSuggestions(matches);
+      setSuggestions(matches)
 
       // Auto-fill district and state if village matches exactly
       if (cityToDistrict[villageLower]) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           district: cityToDistrict[villageLower],
-          state: stateMaharashtra
-        }));
+          state: stateMaharashtra,
+        }))
       }
     }
   }
 
   const handleDistrictInput = (e) => {
-    const { value } = e.target;
-    setFormData(prev => ({
+    const { value } = e.target
+    setFormData((prev) => ({
       ...prev,
       district: value,
-      taluka: '', // Clear taluka when district changes
-    }));
+      taluka: "", // Changed from [] to ""
+    }))
+
     // Filter district suggestions by value
-    if (value.trim() === '') {
-      setDistrictSuggestions(districts);
+    if (value.trim() === "") {
+      setDistrictSuggestions(districts)
     } else {
-      setDistrictSuggestions(
-        districts.filter((d) => d.toLowerCase().includes(value.trim().toLowerCase()))
-      );
+      setDistrictSuggestions(districts.filter((d) => d.toLowerCase().includes(value.trim().toLowerCase())))
     }
-    setShowDistrictDropdown(true);
-    setTalukaSuggestions([]);
-    setShowTalukaDropdown(false);
-  };
+    setShowDistrictDropdown(true)
+
+    // Clear allocated talukas when district changes
+    setAllocatedTalukas([])
+    setCurrentAllocatedTaluka("")
+    setAllocatedTalukaSuggestions([])
+  }
 
   const handleDistrictSelect = (district) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       district,
-      taluka: '', // Clear taluka when district changed
-    }));
-    setDistrictSuggestions([]);
-    setShowDistrictDropdown(false);
-    // Set taluka options for selected district
-    setTalukaSuggestions(maharashtraDistricts[district] || []);
-  };
+      taluka: "", // Clear taluka when district changed
+    }))
+    setDistrictSuggestions([])
+    setShowDistrictDropdown(false)
 
+    // Set taluka options for selected district
+    setTalukaSuggestions(maharashtraDistricts[district] || [])
+
+    // Update allocated taluka suggestions when district changes
+    setAllocatedTalukaSuggestions(maharashtraDistricts[district] || [])
+    setAllocatedTalukas([]) // Clear previously allocated talukas
+    setCurrentAllocatedTaluka("")
+  }
 
   const handleTalukaInput = (e) => {
-    const { value } = e.target;
-    setFormData(prev => ({
+    const { value } = e.target
+    setFormData((prev) => ({
       ...prev,
       taluka: value,
-    }));
+    }))
+
     if (formData.district && maharashtraDistricts[formData.district]) {
-      if (value.trim() === '') {
-        setTalukaSuggestions(maharashtraDistricts[formData.district]);
+      if (value.trim() === "") {
+        setTalukaSuggestions(maharashtraDistricts[formData.district])
       } else {
         setTalukaSuggestions(
-          maharashtraDistricts[formData.district].filter((t) =>
-            t.toLowerCase().includes(value.trim().toLowerCase())
-          )
-        );
+          maharashtraDistricts[formData.district].filter((t) => t.toLowerCase().includes(value.trim().toLowerCase())),
+        )
       }
-      setShowTalukaDropdown(true);
+      setShowTalukaDropdown(true)
     }
-  };
+  }
 
   const handleTalukaSelect = (taluka) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      taluka,
-    }));
-    setTalukaSuggestions([]);
-    setShowTalukaDropdown(false);
-  };
+      taluka: taluka,
+    }))
+    setTalukaSuggestions([])
+    setShowTalukaDropdown(false)
+  }
 
+  // New functions for Allocate Talukas
+  const handleAllocatedTalukaInput = (e) => {
+    const { value } = e.target
+    setCurrentAllocatedTaluka(value)
+
+    if (formData.district && maharashtraDistricts[formData.district]) {
+      if (value.trim() === "") {
+        setAllocatedTalukaSuggestions(maharashtraDistricts[formData.district])
+      } else {
+        setAllocatedTalukaSuggestions(
+          maharashtraDistricts[formData.district].filter(
+            (t) => t.toLowerCase().includes(value.trim().toLowerCase()) && !allocatedTalukas.includes(t), // Exclude already allocated talukas
+          ),
+        )
+      }
+      setShowAllocatedTalukaDropdown(true)
+    }
+  }
+
+  const handleAllocatedTalukaSelect = (taluka) => {
+    setCurrentAllocatedTaluka(taluka)
+    setShowAllocatedTalukaDropdown(false)
+  }
+
+  const handleAddAllocatedTaluka = () => {
+    if (currentAllocatedTaluka && !allocatedTalukas.includes(currentAllocatedTaluka)) {
+      setAllocatedTalukas((prev) => [...prev, currentAllocatedTaluka])
+      setCurrentAllocatedTaluka("")
+
+      // Update suggestions to exclude the newly added taluka
+      if (formData.district && maharashtraDistricts[formData.district]) {
+        setAllocatedTalukaSuggestions(
+          maharashtraDistricts[formData.district].filter(
+            (t) => !allocatedTalukas.includes(t) && t !== currentAllocatedTaluka,
+          ),
+        )
+      }
+    }
+  }
+
+  const handleRemoveAllocatedTaluka = (talukaToRemove) => {
+    setAllocatedTalukas((prev) => prev.filter((t) => t !== talukaToRemove))
+
+    // Update suggestions to include the removed taluka
+    if (formData.district && maharashtraDistricts[formData.district]) {
+      setAllocatedTalukaSuggestions(
+        maharashtraDistricts[formData.district].filter((t) => !allocatedTalukas.includes(t) || t === talukaToRemove),
+      )
+    }
+  }
 
   // Handle suggestion selection
   const handleSuggestionClick = (suggestion) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       village: suggestion,
-      district: cityToDistrict[suggestion.toLowerCase()] || '',
-      state: cityToDistrict[suggestion.toLowerCase()] ? stateMaharashtra : ''
-    }));
-    setSuggestions([]);
-  };
+      district: cityToDistrict[suggestion.toLowerCase()] || "",
+      state: cityToDistrict[suggestion.toLowerCase()] ? stateMaharashtra : "",
+    }))
+    setSuggestions([])
+  }
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = {}
+
     // Required field validation
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.contact.trim()) newErrors.contact = 'Contact is required';
-    if (!formData.aadhaarNumber.trim()) newErrors.aadhaarNumber = 'Aadhaar number is required';
-    if (!formData.age) newErrors.age = 'Age is required';
-    if (!formData.village.trim()) newErrors.village = 'Village is required';
-    if (!formData.taluka.trim()) newErrors.taluka = 'Taluka is required';
-    if (!formData.district.trim()) newErrors.district = 'District is required';
-    if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
+    if (!formData.name.trim()) newErrors.name = "Name is required"
+    if (!formData.email.trim()) newErrors.email = "Email is required"
+    if (!formData.contact.trim()) newErrors.contact = "Contact is required"
+    if (!formData.aadhaarNumber.trim()) newErrors.aadhaarNumber = "Aadhaar number is required"
+    if (!formData.age) newErrors.age = "Age is required"
+    if (!formData.village.trim()) newErrors.village = "Village is required"
+    if (!formData.taluka.trim()) {
+      newErrors.taluka = "Taluka is required"
+    }
+    if (!allocatedTalukas || allocatedTalukas.length === 0) {
+      newErrors.allocatedTaluka = "At least one taluka is to be allocated"
+    }
+    if (!formData.district.trim()) newErrors.district = "District is required"
+    if (!formData.pincode.trim()) newErrors.pincode = "Pincode is required"
 
     // Email validation
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address"
     }
 
     // Phone validation
     if (formData.contact && !/^\d{10}$/.test(formData.contact)) {
-      newErrors.contact = 'Please enter a valid 10-digit phone number';
+      newErrors.contact = "Please enter a valid 10-digit phone number"
     }
 
     // Aadhaar validation
     if (formData.aadhaarNumber && !/^\d{12}$/.test(formData.aadhaarNumber)) {
-      newErrors.aadhaarNumber = 'Please enter a valid 12-digit Aadhaar number';
+      newErrors.aadhaarNumber = "Please enter a valid 12-digit Aadhaar number"
     }
 
     // Age validation
     if (formData.age && (isNaN(formData.age) || formData.age < 18 || formData.age > 100)) {
-      newErrors.age = 'Please enter a valid age (18-100)';
+      newErrors.age = "Please enter a valid age (18-100)"
     }
 
     // Pincode validation
     if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
-      newErrors.pincode = 'Please enter a valid 6-digit pincode';
+      newErrors.pincode = "Please enter a valid 6-digit pincode"
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Submitting form...", formData); // Add this
+    e.preventDefault()
+    console.log("Submitting form...", formData)
+
     if (!validateForm()) {
-      console.log("Validation failed", errors); // Add this
-      return;
+      console.log("Validation failed", errors)
+      return
     }
-    setIsSubmitting(true);
+
+    setIsSubmitting(true)
     try {
-      const token = localStorage.getItem("Authorization")?.split(" ")[1];
+      const token = localStorage.getItem("Authorization")?.split(" ")[1]
       if (!token) {
-        toast.error('Authentication token not found, redirecting to login');
+        toast.error("Authentication token not found, redirecting to login")
         setTimeout(async () => {
-          await router.push('/admin/login');
-        }, 3000);
-        return;
+          await router.push("/admin/login")
+        }, 3000)
+        return
       }
 
-      const { confirmPassword, ...submitData } = formData;
-      const response = await axios.post(
-        `${BASE_URL}/api/verifier/register`,
-        submitData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        }
-      );
+      const { ...submitData } = formData
+      const transformedData = {
+        ...submitData,
+        state: submitData.state.toLowerCase(),
+        district: submitData.district.toLowerCase(),
+        taluka: submitData.taluka.toLowerCase(), // Changed from map to simple toLowerCase
+        village: submitData.village.toLowerCase(),
+        allocatedTaluka: allocatedTalukas.map((t) => t.toLowerCase()), // Add allocated talukas
+      }
+
+      const response = await axios.post(`${BASE_URL}/api/verifier/register`, transformedData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
 
       if (response.status === 201) {
-        toast.success('Verifier registered successfully!', {
+        toast.success("Verifier registered successfully!", {
           duration: 4000,
-          position: 'top-center',
-        });
-        setSubmitSuccess(true);
+          position: "top-center",
+        })
+        setSubmitSuccess(true)
         setFormData({
-          name: '',
-          email: '',
-          contact: '',
-          aadhaarNumber: '',
-          age: '',
-          village: '',
-          landMark: '',
-          taluka: '',
-          district: '',
-          state: 'Maharashtra',
-          pincode: '',
-          password: '',
-          confirmPassword: '',
-          location: {
-            latitude: '',
-            longitude: ''
-          }
-        });
+          name: "",
+          email: "",
+          contact: "",
+          aadhaarNumber: "",
+          age: "",
+          village: "",
+          landMark: "",
+          taluka: "", // Changed from [] to ""
+          district: "",
+          state: "Maharashtra",
+          pincode: "",
+        })
+        setAllocatedTalukas([]) // Reset allocated talukas
+        setCurrentAllocatedTaluka("")
       }
     } catch (err) {
       if (err.response?.status === 401) {
-        toast.error('Authentication Failed, redirecting to login page');
-        localStorage.removeItem('Authorization');
+        toast.error("Authentication Failed, redirecting to login page")
+        localStorage.removeItem("Authorization")
         setTimeout(() => {
-          router.push('/admin/login');
-        }, 3000);
-        return;
+          router.push("/admin/login")
+        }, 3000)
+        return
       }
       if (err.response?.status === 500) {
-        const errorMessage = err.response?.data?.message || '';
-        if (errorMessage.includes('contact_1')) {
-          setErrors(prev => ({
+        const errorMessage = err.response?.data?.message || ""
+        if (errorMessage.includes("contact_1")) {
+          setErrors((prev) => ({
             ...prev,
-            contact: 'This phone number is already registered'
-          }));
-          toast.error('This phone number is already registered');
-        }
-        else if (errorMessage.includes('aadhaarNumber_1')) {
-          setErrors(prev => ({
+            contact: "This phone number is already registered",
+          }))
+          toast.error("This phone number is already registered")
+        } else if (errorMessage.includes("aadhaarNumber_1")) {
+          setErrors((prev) => ({
             ...prev,
-            aadhaarNumber: 'This Aadhaar number is already registered'
-          }));
-          toast.error('This Aadhaar number is already registered');
+            aadhaarNumber: "This Aadhaar number is already registered",
+          }))
+          toast.error("This Aadhaar number is already registered")
+        } else {
+          toast.error("An error occurred while registering the verifier")
         }
-        else {
-          toast.error('An error occurred while registering the verifier');
-        }
-      }
-      else {
-        toast.error('An unexpected error occurred');
+      } else {
+        toast.error("An unexpected error occurred")
       }
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
-
+  }
 
   if (submitSuccess) {
     return (
@@ -653,7 +739,7 @@ const AddVerifierPage = () => {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -682,15 +768,13 @@ const AddVerifierPage = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? "border-red-500" : "border-gray-300"
                       }`}
                     placeholder="Enter full name"
                   />
@@ -698,9 +782,7 @@ const AddVerifierPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age *</label>
                   <input
                     type="number"
                     name="age"
@@ -708,7 +790,7 @@ const AddVerifierPage = () => {
                     onChange={handleInputChange}
                     min="18"
                     max="100"
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.age ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.age ? "border-red-500" : "border-gray-300"
                       }`}
                     placeholder="Enter age"
                   />
@@ -716,15 +798,13 @@ const AddVerifierPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.email ? "border-red-500" : "border-gray-300"
                       }`}
                     placeholder="Enter email address"
                   />
@@ -732,16 +812,14 @@ const AddVerifierPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Number *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
                   <input
                     type="tel"
                     name="contact"
                     maxLength={10}
                     value={formData.contact}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.contact ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.contact ? "border-red-500" : "border-gray-300"
                       }`}
                     placeholder="Enter 10-digit phone number"
                   />
@@ -749,16 +827,14 @@ const AddVerifierPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Aadhaar Number *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Number *</label>
                   <input
                     type="text"
                     name="aadhaarNumber"
                     value={formData.aadhaarNumber}
                     maxLength={12}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.aadhaarNumber ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.aadhaarNumber ? "border-red-500" : "border-gray-300"
                       }`}
                     placeholder="Enter 12-digit Aadhaar number"
                   />
@@ -767,10 +843,11 @@ const AddVerifierPage = () => {
               </div>
             </div>
 
-            {/* Address Information */}
             {/* Address Details */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">Address Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                Address Details
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* State */}
                 <div>
@@ -783,8 +860,9 @@ const AddVerifierPage = () => {
                     className="w-full px-4 py-3 border rounded-lg bg-gray-100 text-gray-500"
                   />
                 </div>
+
                 {/* District */}
-                <div className="relative">
+                <div className="relative" ref={districtDropdownRef}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">District *</label>
                   <input
                     type="text"
@@ -792,26 +870,23 @@ const AddVerifierPage = () => {
                     value={formData.district}
                     onChange={handleDistrictInput}
                     onFocus={() => {
-                      setDistrictSuggestions(districts);
-                      setShowDistrictDropdown(true);
+                      setDistrictSuggestions(districts)
+                      setShowDistrictDropdown(true)
                     }}
                     autoComplete="off"
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.district ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.district ? "border-red-500" : "border-gray-300"
+                      }`}
                     placeholder="Select or type district"
                   />
                   {showDistrictDropdown && districtSuggestions.length > 0 && (
-                    <ul
-                      ref={districtDropdownRef}
-                      className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                       {districtSuggestions.map((district) => (
                         <li
                           key={district}
                           className="px-4 py-2 hover:bg-green-100 cursor-pointer"
-
                           onClick={(e) => {
-                            e.stopPropagation();
-                            handleDistrictSelect(district);
-
+                            e.stopPropagation()
+                            handleDistrictSelect(district)
                           }}
                         >
                           {district}
@@ -821,8 +896,9 @@ const AddVerifierPage = () => {
                   )}
                   {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
                 </div>
+
                 {/* Taluka */}
-                <div className="relative">
+                <div className="relative" ref={talukaDropdownRef}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Taluka *</label>
                   <input
                     type="text"
@@ -831,28 +907,26 @@ const AddVerifierPage = () => {
                     onChange={handleTalukaInput}
                     onFocus={() => {
                       if (formData.district && maharashtraDistricts[formData.district]) {
-                        setTalukaSuggestions(maharashtraDistricts[formData.district]);
-                        setShowTalukaDropdown(true);
+                        setTalukaSuggestions(maharashtraDistricts[formData.district])
+                        setShowTalukaDropdown(true)
                       }
                     }}
                     autoComplete="off"
                     disabled={!isDistrictFilled}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.taluka ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.taluka ? "border-red-500" : "border-gray-300"
+                      }`}
                     placeholder={!formData.district ? "Select district first" : "Select or type taluka"}
                   />
                   {showTalukaDropdown && talukaSuggestions.length > 0 && (
-                    <ul
-                      ref={talukaDropdownRef}
-                      className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                       {talukaSuggestions.map((taluka) => (
                         <li
                           key={taluka}
                           className="px-4 py-2 hover:bg-green-100 cursor-pointer"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            handleTalukaSelect(taluka);
+                            e.stopPropagation()
+                            handleTalukaSelect(taluka)
                           }}
-
                         >
                           {taluka}
                         </li>
@@ -861,6 +935,7 @@ const AddVerifierPage = () => {
                   )}
                   {errors.taluka && <p className="text-red-500 text-sm mt-1">{errors.taluka}</p>}
                 </div>
+
                 {/* Village */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Village *</label>
@@ -869,13 +944,15 @@ const AddVerifierPage = () => {
                     name="village"
                     value={formData.village}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.village ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.village ? "border-red-500" : "border-gray-300"
+                      }`}
                     placeholder="Enter village name"
                     autoComplete="off"
                     disabled={!isTalukaFilled}
                   />
                   {errors.village && <p className="text-red-500 text-sm mt-1">{errors.village}</p>}
                 </div>
+
                 {/* Landmark */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Landmark</label>
@@ -889,6 +966,7 @@ const AddVerifierPage = () => {
                     disabled={!isTalukaFilled}
                   />
                 </div>
+
                 {/* Pincode */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
@@ -898,13 +976,96 @@ const AddVerifierPage = () => {
                     value={formData.pincode}
                     onChange={handleInputChange}
                     maxLength={6}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.pincode ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.pincode ? "border-red-500" : "border-gray-300"
+                      }`}
                     placeholder="Enter pincode"
                     disabled={!isTalukaFilled}
                   />
                   {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
                 </div>
               </div>
+            </div>
+
+            {/* Allocate Talukas Section */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                Allocate Talukas
+              </h3>
+              {/* Input field with Add button */}
+              <div className="mb-4">
+                <div className="flex gap-3">
+                  <div className="flex-1 relative" ref={allocatedTalukaDropdownRef}>
+                    <input
+                      type="text"
+                      value={currentAllocatedTaluka}
+                      onChange={handleAllocatedTalukaInput}
+                      onFocus={() => {
+                        if (formData.district && maharashtraDistricts[formData.district]) {
+                          setAllocatedTalukaSuggestions(
+                            maharashtraDistricts[formData.district].filter((t) => !allocatedTalukas.includes(t)),
+                          )
+                          setShowAllocatedTalukaDropdown(true)
+                        }
+                      }}
+                      autoComplete="off"
+                      disabled={!isDistrictFilled}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder={
+                        !formData.district ? "Select district first" : "Search and select taluka to allocate"
+                      }
+                    />
+                    {showAllocatedTalukaDropdown && allocatedTalukaSuggestions.length > 0 && (
+                      <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        {allocatedTalukaSuggestions.map((taluka) => (
+                          <li
+                            key={taluka}
+                            className="px-4 py-2 hover:bg-green-100 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAllocatedTalukaSelect(taluka)
+                            }}
+                          >
+                            {taluka}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddAllocatedTaluka}
+                    disabled={!currentAllocatedTaluka || !isDistrictFilled}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Add
+                  </button>
+                </div>
+                {errors.allocatedTaluka && <p className="text-red-500 text-sm mt-1">{errors.allocatedTaluka}</p>}
+              </div>
+
+              {/* Display allocated talukas */}
+              {allocatedTalukas.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Allocated Talukas:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {allocatedTalukas.map((taluka, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                      >
+                        {taluka}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAllocatedTaluka(taluka)}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          −
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -938,7 +1099,7 @@ const AddVerifierPage = () => {
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AddVerifierPage;
+export default AddVerifierPage
