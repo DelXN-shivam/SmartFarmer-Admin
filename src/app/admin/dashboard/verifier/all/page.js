@@ -7,6 +7,8 @@ import GoToTopButton from "@/components/ui/GoToTopButton"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import VerifierCard from "@/components/ui/VerifierCard"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function VerifiersPage() {
   const [loading, setLoading] = useState(true)
@@ -22,21 +24,18 @@ export default function VerifiersPage() {
     try {
       setLoading(true)
       setError(null)
-
       const token = localStorage.getItem("Authorization")?.split(" ")[1]
       if (!token) {
         toast.error("Session expired. Please login again.")
         router.push("/admin/login")
         return
       }
-
       const response = await axios.get(`${BASE_URL}/api/verifier`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       })
-
       if (response.status === 200 && response.data?.data) {
         setVerifiers(response.data.data)
       } else {
@@ -44,11 +43,8 @@ export default function VerifiersPage() {
       }
     } catch (err) {
       console.error("Error fetching verifiers:", err)
-      const errorMessage = err.response?.data?.message ||
-        err.message ||
-        "Failed to fetch verifiers"
+      const errorMessage = err.response?.data?.message || err.message || "Failed to fetch verifiers"
       setError(errorMessage)
-
       if (err.response?.status === 401) {
         localStorage.removeItem("Authorization")
         toast.error("Session expired. Redirecting to login...")
@@ -70,19 +66,13 @@ export default function VerifiersPage() {
         toast.error("Authentication required")
         return router.push("/admin/login")
       }
-
       const response = await axios.put(
         `${BASE_URL}/api/verifier/${verifierToVerify._id}/verify`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
-
       if (response.status === 200) {
-        setVerifiers(prev =>
-          prev.map(v =>
-            v._id === verifierToVerify._id ? { ...v, isVerified: true } : v
-          )
-        )
+        setVerifiers((prev) => prev.map((v) => (v._id === verifierToVerify._id ? { ...v, isVerified: true } : v)))
         toast.success(`Verified ${verifierToVerify.name} successfully!`)
       }
     } catch (err) {
@@ -98,23 +88,15 @@ export default function VerifiersPage() {
         toast.error("Authentication required")
         return router.push("/admin/login")
       }
-
-      const response = await axios.patch(
-        `${BASE_URL}/api/verifier/update/${updatedVerifier._id}`,
-        updatedVerifier,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
+      const response = await axios.patch(`${BASE_URL}/api/verifier/update/${updatedVerifier._id}`, updatedVerifier, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       if (response.status === 200) {
-        setVerifiers(prev =>
-          prev.map(v =>
-            v._id === updatedVerifier._id ? response.data.data : v
-          )
-        )
+        setVerifiers((prev) => prev.map((v) => (v._id === updatedVerifier._id ? response.data.data : v)))
         toast.success("Verifier updated successfully!")
         setTimeout(() => {
-          getAllVerifiers();
-        } , 1500)
+          getAllVerifiers()
+        }, 1500)
       }
     } catch (err) {
       console.error("Update failed:", err)
@@ -123,22 +105,22 @@ export default function VerifiersPage() {
   }
 
   // Optimized filtering
-  const filteredVerifiers = verifiers.filter(verifier => {
+  const filteredVerifiers = verifiers.filter((verifier) => {
     if (!verifier || typeof verifier !== "object") return false
-
     const searchLower = searchTerm.toLowerCase()
     const name = verifier.name || ""
     const village = verifier.village || ""
     const district = verifier.district || ""
+    const taluka = verifier.taluka || "" // Added taluka
 
     return (
       (name.toLowerCase().includes(searchLower) ||
         village.toLowerCase().includes(searchLower) ||
-        district.toLowerCase().includes(searchLower)) &&
+        district.toLowerCase().includes(searchLower) ||
+        taluka.toLowerCase().includes(searchLower)) && // Included taluka in search
       (statusFilter === "all" || verifier.applicationStatus === statusFilter)
     )
   })
-
 
   if (loading) {
     return (
@@ -174,23 +156,11 @@ export default function VerifiersPage() {
     <div className="p-4 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-16">
         <h1 className="text-3xl font-bold text-gray-900">Verifier Directory</h1>
-
-        <div className="flex flex-col sm:flex-row  w-full md:w-auto">
-          {/* Status Filter */}
-          {/* <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select> */}
-
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
+          
           {/* Search Input */}
-          <div className="relative">
-            <input
+          <div className="relative w-full sm:w-auto">
+            <Input
               type="text"
               placeholder="Search verifiers..."
               className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -209,13 +179,7 @@ export default function VerifiersPage() {
           </div>
         </div>
       </div>
-
-      <VerifierCard
-        verifiers={filteredVerifiers}
-        onVerify={handleVerifyVerifier}
-        onEdit={handleEditVerifier}
-      />
-
+      <VerifierCard verifiers={filteredVerifiers} onVerify={handleVerifyVerifier} onEdit={handleEditVerifier} />
       <GoToTopButton />
     </div>
   )
