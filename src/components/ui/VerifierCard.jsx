@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,15 +8,218 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { MapPin, Phone, FileText, User, Eye, X, Edit, Save, XCircle, Map } from "lucide-react"
 
+// Replicate the district data here for the overlay's internal logic
+const stateMaharashtra = "Maharashtra"
+const maharashtraDistricts = {
+  Ahmednagar: [
+    "Ahmednagar",
+    "Shrirampur",
+    "Rahata",
+    "Rahuri",
+    "Sangamner",
+    "Kopargaon",
+    "Akole",
+    "Nevasa",
+    "Shevgaon",
+    "Pathardi",
+    "Parner",
+    "Jamkhed",
+    "Karjat",
+  ],
+  Akola: ["Akola", "Balapur", "Patur", "Telhara", "Akot", "Murtijapur"],
+  Amravati: [
+    "Amravati",
+    "Chandur Railway",
+    "Chikhaldara",
+    "Daryapur",
+    "Dhamangaon Railway",
+    "Morshi",
+    "Nandgaon-Khandeshwar",
+    "Anjangaon Surji",
+    "Achalpur",
+  ],
+  Aurangabad: ["Aurangabad", "Gangapur", "Vaijapur", "Sillod", "Kannad", "Paithan", "Khuldabad", "Phulambri"],
+  Beed: ["Beed", "Ashti", "Ambejogai", "Patoda", "Kaij", "Georai", "Majalgaon", "Parli", "Shirur (Beed)"],
+  Bhandara: ["Bhandara", "Tumsar", "Sakoli", "Lakhani", "Mohadi", "Pauni"],
+  Buldhana: [
+    "Buldhana",
+    "Chikhli",
+    "Mehkar",
+    "Jalgaon Jamod",
+    "Sangrampur",
+    "Malkapur",
+    "Deulgaon Raja",
+    "Motala",
+    "Nandura",
+    "Shegaon",
+  ],
+  Chandrapur: [
+    "Chandrapur",
+    "Warora",
+    "Bhadravati",
+    "Chimur",
+    "Nagbhid",
+    "Mul",
+    "Saoli",
+    "Rajura",
+    "Pombhurna",
+    "Ballarpur",
+    "Gondpipri",
+    "Korpana",
+  ],
+  Dhule: ["Dhule", "Shirpur", "Sakri", "Sindkheda"],
+  Gadchiroli: [
+    "Gadchiroli",
+    "Aheri",
+    "Chamorshi",
+    "Etapalli",
+    "Armori",
+    "Desaiganj (Wadsa)",
+    "Korchi",
+    "Kurkheda",
+    "Mulchera",
+  ],
+  Gondia: ["Gondia", "Tirora", "Goregaon", "Amgaon", "Arjuni Morgaon", "Deori", "Sadak Arjuni", "Salekasa"],
+  Hingoli: ["Hingoli", "Kalamnuri", "Basmath", "Sengaon"],
+  Jalgaon: [
+    "Jalgaon",
+    "Bhusawal",
+    "Jamner",
+    "Chalisgaon",
+    "Erandol",
+    "Yawal",
+    "Amalner",
+    "Pachora",
+    "Parola",
+    "Dharangaon",
+  ],
+  Jalna: ["Jalna", "Bhokardan", "Jaffrabad", "Ambad", "Badnapur", "Mantha", "Partur", "Ghansawangi"],
+  Kolhapur: [
+    "Kolhapur",
+    "Karveer",
+    "Gaganbawada",
+    "Radhanagari",
+    "Ajra",
+    "Bhudargad",
+    "Chandgad",
+    "Gadhinglaj",
+    "Hatkanangale",
+    "Kagal",
+    "Panhala",
+    "Shirol",
+  ],
+  Latur: ["Latur", "Ahmadpur", "Udgir", "Nilanga", "Ausa", "Chakur", "Deoni", "Renapur", "Shirur Anantpal"],
+  "Mumbai City": ["Mumbai City"],
+  "Mumbai Suburban": ["Mumbai Suburban"],
+  Nagpur: [
+    "Nagpur",
+    "Katol",
+    "Narkhed",
+    "Kalmeshwar",
+    "Hingna",
+    "Umred",
+    "Parseoni",
+    "Ramtek",
+    "Bhiwapur",
+    "Kuhi",
+    "Mauda",
+  ],
+  Nanded: ["Nanded", "Kinwat", "Hadgaon", "Bhokar", "Loha", "Naigaon", "Mukhed", "Deglur", "Kandhar", "Himayatnagar"],
+  Nandurbar: ["Nandurbar", "Shahada", "Taloda", "Navapur", "Akkalkuwa", "Akrani (Dhadgaon)"],
+  Nashik: [
+    "Nashik",
+    "Malegaon",
+    "Sinnar",
+    "Igatpuri",
+    "Kalwan",
+    "Dindori",
+    "Chandwad",
+    "Deola",
+    "Niphad",
+    "Peth",
+    "Trimbakeshwar",
+    "Baglan",
+    "Yevla",
+  ],
+  Osmanabad: ["Osmanabad", "Tuljapur", "Paranda", "Bhum", "Kalamb", "Lohara", "Umarga", "Vashi"],
+  Parbhani: ["Parbhani", "Gangakhed", "Pathri", "Sonpeth", "Manwat", "Jintur", "Purna", "Palam", "Sailu"],
+  Pune: [
+    "Pune City",
+    "Haveli",
+    "Mulshi",
+    "Bhor",
+    "Baramati",
+    "Indapur",
+    "Junnar",
+    "Daund",
+    "Ambegaon",
+    "Shirur",
+    "Velhe",
+    "Purandar",
+    "Mawal",
+    "Khed",
+  ],
+  Raigad: [
+    "Alibag",
+    "Pen",
+    "Mahad",
+    "Murud",
+    "Roha",
+    "Shrivardhan",
+    "Tala",
+    "Uran",
+    "Karjat",
+    "Khalapur",
+    "Mangaon",
+    "Poladpur",
+    "Sudhagad Pali",
+  ],
+  Ratnagiri: ["Ratnagiri", "Mandangad", "Dapoli", "Khed", "Guhagar", "Chiplun", "Sangameshwar", "Lanja", "Rajapur"],
+  Sangli: ["Sangli", "Miraj", "Tasgaon", "Kavathemahankal", "Jath", "Khanapur", "Palus", "Atpadi", "Walwa", "Shirala"],
+  Satara: ["Satara", "Karad", "Wai", "Patan", "Mahabaleshwar", "Phaltan", "Khatav", "Koregaon", "Jaoli", "Man"],
+  Sindhudurg: ["Sindhudurg", "Kudal", "Sawantwadi", "Dodamarg", "Vengurla", "Malvan", "Devgad", "Kankavli"],
+  Solapur: [
+    "Solapur North",
+    "Solapur South",
+    "Barshi",
+    "Madha",
+    "Karmala",
+    "Mohol",
+    "Pandharpur",
+    "Sangole",
+    "Akkalkot",
+    "Malshiras",
+  ],
+  Thane: ["Thane", "Kalyan", "Bhiwandi", "Murbad", "Ulhasnagar", "Ambarnath", "Shahapur"],
+  Wardha: ["Wardha", "Hinganghat", "Deoli", "Arvi", "Seloo", "Samudrapur"],
+  Washim: ["Washim", "Mangrulpir", "Karanja", "Manora", "Malegaon (Washim)", "Risod"],
+  Yavatmal: [
+    "Yavatmal",
+    "Pusad",
+    "Umarkhed",
+    "Digras",
+    "Arni",
+    "Darwha",
+    "Kelapur",
+    "Ghatanji",
+    "Ner",
+    "Mahagaon",
+    "Ralegaon",
+    "Babulgaon",
+  ],
+}
+
 const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
   const [selectedVerifier, setSelectedVerifier] = useState(null)
   const [loading, setLoading] = useState(false)
+
   const maskAadhaar = (aadhaar) => aadhaar?.replace(/(\d{4})(\d{4})(\d{4})/, "****-****-$3") || "Not provided"
   const formatDocumentName = (doc) =>
     doc
       .replace(/[_-]/g, " ")
       .replace(/\.(jpg|pdf|png)$/i, "")
       .toUpperCase()
+
   const openVerifierDetails = (verifier) => setSelectedVerifier(verifier)
   const closeVerifierDetails = () => setSelectedVerifier(null)
 
@@ -29,22 +232,126 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
       allocatedTaluka: verifier.allocatedTaluka ? [...verifier.allocatedTaluka] : [],
     }))
 
+    // States for main Taluka dropdown in overlay
+    const [talukaSuggestionsOverlay, setTalukaSuggestionsOverlay] = useState([])
+    const [showTalukaDropdownOverlay, setShowTalukaDropdownOverlay] = useState(false)
+    const talukaDropdownRefOverlay = useRef(null)
+
+    // States for Allocate Talukas in overlay
+    const [currentAllocatedTaluka, setCurrentAllocatedTaluka] = useState("")
+    const [allocatedTalukaSuggestions, setAllocatedTalukaSuggestions] = useState([])
+    const [showAllocatedTalukaDropdown, setShowAllocatedTalukaDropdown] = useState(false)
+    const allocatedTalukaDropdownRef = useRef(null)
+
+    // Determine if district is filled for enabling taluka inputs
+    const isDistrictFilled = !!editableVerifier.district
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (allocatedTalukaDropdownRef.current && !allocatedTalukaDropdownRef.current.contains(event.target)) {
+          setShowAllocatedTalukaDropdown(false)
+        }
+        if (talukaDropdownRefOverlay.current && !talukaDropdownRefOverlay.current.contains(event.target)) {
+          setShowTalukaDropdownOverlay(false)
+        }
+      }
+      document.addEventListener("click", handleClickOutside)
+      return () => document.removeEventListener("click", handleClickOutside)
+    }, [])
+
     const handleInputChange = (e) => {
       const { name, value } = e.target
       setEditableVerifier((prev) => ({ ...prev, [name]: value }))
     }
 
-    const handleAllocatedTalukasChange = (e) => {
-      const value = e.target.value
+    // Functions for main Taluka dropdown in overlay
+    const handleTalukaInputOverlay = (e) => {
+      const { value } = e.target
       setEditableVerifier((prev) => ({
         ...prev,
-        allocatedTaluka: value.split(",").map((t) => t.trim()),
+        taluka: value,
       }))
+      if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+        if (value.trim() === "") {
+          setTalukaSuggestionsOverlay(maharashtraDistricts[editableVerifier.district])
+        } else {
+          setTalukaSuggestionsOverlay(
+            maharashtraDistricts[editableVerifier.district].filter((t) =>
+              t.toLowerCase().includes(value.trim().toLowerCase()),
+            ),
+          )
+        }
+        setShowTalukaDropdownOverlay(true)
+      }
+    }
+
+    const handleTalukaSelectOverlay = (taluka) => {
+      setEditableVerifier((prev) => ({
+        ...prev,
+        taluka: taluka,
+      }))
+      setTalukaSuggestionsOverlay([])
+      setShowTalukaDropdownOverlay(false)
+    }
+
+    // Functions for Allocate Talukas in overlay
+    const handleAllocatedTalukaInput = (e) => {
+      const { value } = e.target
+      setCurrentAllocatedTaluka(value)
+      if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+        if (value.trim() === "") {
+          setAllocatedTalukaSuggestions(maharashtraDistricts[editableVerifier.district])
+        } else {
+          setAllocatedTalukaSuggestions(
+            maharashtraDistricts[editableVerifier.district].filter(
+              (t) =>
+                t.toLowerCase().includes(value.trim().toLowerCase()) && !editableVerifier.allocatedTaluka.includes(t),
+            ),
+          )
+        }
+        setShowAllocatedTalukaDropdown(true)
+      }
+    }
+
+    const handleAllocatedTalukaSelect = (taluka) => {
+      setCurrentAllocatedTaluka(taluka)
+      setShowAllocatedTalukaDropdown(false)
+    }
+
+    const handleAddAllocatedTaluka = () => {
+      if (currentAllocatedTaluka && !editableVerifier.allocatedTaluka.includes(currentAllocatedTaluka)) {
+        setEditableVerifier((prev) => ({
+          ...prev,
+          allocatedTaluka: [...prev.allocatedTaluka, currentAllocatedTaluka],
+        }))
+        setCurrentAllocatedTaluka("")
+        if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+          setAllocatedTalukaSuggestions(
+            maharashtraDistricts[editableVerifier.district].filter(
+              (t) => !editableVerifier.allocatedTaluka.includes(t) && t !== currentAllocatedTaluka,
+            ),
+          )
+        }
+      }
+    }
+
+    const handleRemoveAllocatedTaluka = (talukaToRemove) => {
+      setEditableVerifier((prev) => ({
+        ...prev,
+        allocatedTaluka: prev.allocatedTaluka.filter((t) => t !== talukaToRemove),
+      }))
+      if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+        setAllocatedTalukaSuggestions(
+          maharashtraDistricts[editableVerifier.district].filter(
+            (t) => !editableVerifier.allocatedTaluka.includes(t) || t === talukaToRemove,
+          ),
+        )
+      }
     }
 
     const handleSave = () => {
       if (onEdit) {
-        onEdit(editableVerifier) // Pass the updated verifier data to the parent
+        onEdit(editableVerifier)
       }
       setIsEditing(false)
       onClose()
@@ -58,6 +365,11 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
         allocatedTaluka: verifier.allocatedTaluka ? [...verifier.allocatedTaluka] : [],
       }))
       setIsEditing(false)
+      setCurrentAllocatedTaluka("")
+      setAllocatedTalukaSuggestions([])
+      setShowAllocatedTalukaDropdown(false)
+      setTalukaSuggestionsOverlay([]) // Reset main taluka suggestions
+      setShowTalukaDropdownOverlay(false) // Close main taluka dropdown
     }
 
     return (
@@ -178,18 +490,46 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                           <p className="font-semibold text-gray-900">{verifier.village || "N/A"}</p>
                         )}
                       </div>
-                      <div>
+                      {/* Taluka Input with Dropdown */}
+                      <div className="relative" ref={talukaDropdownRefOverlay}>
                         <Label htmlFor="taluka" className="text-sm text-gray-500">
                           Taluka
                         </Label>
                         {isEditing ? (
-                          <Input
-                            id="taluka"
-                            name="taluka"
-                            value={editableVerifier.taluka || ""}
-                            onChange={handleInputChange}
-                            className="mt-1"
-                          />
+                          <>
+                            <Input
+                              id="taluka"
+                              name="taluka"
+                              value={editableVerifier.taluka || ""}
+                              onChange={handleTalukaInputOverlay}
+                              onFocus={() => {
+                                if (isDistrictFilled && maharashtraDistricts[editableVerifier.district]) {
+                                  setTalukaSuggestionsOverlay(maharashtraDistricts[editableVerifier.district])
+                                  setShowTalukaDropdownOverlay(true)
+                                }
+                              }}
+                              autoComplete="off"
+                              disabled={!isDistrictFilled}
+                              className="mt-1"
+                              placeholder={!isDistrictFilled ? "Select district first" : "Select or type taluka"}
+                            />
+                            {showTalukaDropdownOverlay && talukaSuggestionsOverlay.length > 0 && (
+                              <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                {talukaSuggestionsOverlay.map((taluka) => (
+                                  <li
+                                    key={taluka}
+                                    className="px-4 py-2 hover:bg-green-100 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleTalukaSelectOverlay(taluka)
+                                    }}
+                                  >
+                                    {taluka}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </>
                         ) : (
                           <p className="font-semibold text-gray-900">{verifier.taluka || "N/A"}</p>
                         )}
@@ -295,18 +635,78 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                 <h3 className="text-xl font-bold text-gray-900">Allocated Talukas</h3>
               </div>
               {isEditing ? (
-                <div className="space-y-2">
-                  <Label htmlFor="allocatedTaluka" className="text-sm text-gray-500">
-                    Edit Talukas (comma-separated)
-                  </Label>
-                  <Input
-                    id="allocatedTaluka"
-                    name="allocatedTaluka"
-                    value={editableVerifier.allocatedTaluka?.join(", ") || ""}
-                    onChange={handleAllocatedTalukasChange}
-                    className="mt-1"
-                    placeholder="e.g., Taluka A, Taluka B"
-                  />
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="flex-1 relative" ref={allocatedTalukaDropdownRef}>
+                      <Input
+                        type="text"
+                        value={currentAllocatedTaluka}
+                        onChange={handleAllocatedTalukaInput}
+                        onFocus={() => {
+                          if (isDistrictFilled && maharashtraDistricts[editableVerifier.district]) {
+                            setAllocatedTalukaSuggestions(
+                              maharashtraDistricts[editableVerifier.district].filter(
+                                (t) => !editableVerifier.allocatedTaluka.includes(t),
+                              ),
+                            )
+                            setShowAllocatedTalukaDropdown(true)
+                          }
+                        }}
+                        autoComplete="off"
+                        disabled={!isDistrictFilled}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        placeholder={
+                          !isDistrictFilled ? "Select district first" : "Search and select taluka to allocate"
+                        }
+                      />
+                      {showAllocatedTalukaDropdown && allocatedTalukaSuggestions.length > 0 && (
+                        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                          {allocatedTalukaSuggestions.map((taluka) => (
+                            <li
+                              key={taluka}
+                              className="px-4 py-2 hover:bg-green-100 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAllocatedTalukaSelect(taluka)
+                              }}
+                            >
+                              {taluka}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddAllocatedTaluka}
+                      disabled={!currentAllocatedTaluka || !isDistrictFilled}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {editableVerifier.allocatedTaluka && editableVerifier.allocatedTaluka.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Current Allocated Talukas:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {editableVerifier.allocatedTaluka.map((taluka, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                          >
+                            {taluka}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAllocatedTaluka(taluka)}
+                              className="ml-2 text-blue-600 hover:text-blue-800"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -412,11 +812,7 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
       </div>
       {/* Overlay Modal */}
       {selectedVerifier && (
-        <VerifierDetailOverlay
-          verifier={selectedVerifier}
-          onClose={closeVerifierDetails}
-          onEdit={onEdit}
-        />
+        <VerifierDetailOverlay verifier={selectedVerifier} onClose={closeVerifierDetails} onEdit={onEdit} />
       )}
     </div>
   )
