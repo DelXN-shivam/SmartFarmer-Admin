@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/context/AuthContext";
 
 
 export const metadata = {
@@ -14,8 +15,10 @@ export default function RootLayout({ children }) {
       <body
         className=""
       >
-        {children}
-        <Toaster richColors position="top-center" />
+        <AuthProvider>
+          {children}
+          <Toaster richColors position="top-center" />
+        </AuthProvider>
       </body>
     </html>
   );

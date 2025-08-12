@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { AuthContext } from '@/context/AuthContext';
 
 export default function LoginPage() {
     const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+    const { setAccessToken, setUserRole } = useContext(AuthContext);
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -19,7 +21,6 @@ export default function LoginPage() {
             ...formData,
             [e.target.name]: e.target.value
         });
-        // Clear error when user starts typing
         if (error) setError('');
     };
 
@@ -28,26 +29,37 @@ export default function LoginPage() {
             setLoading(true);
             setError('');
             
-            // Basic validation
             if (!formData.email || !formData.password) {
                 setError('Please fill in all fields');
+                setLoading(false);
                 return;
             }
 
-            const res = await axios.post(`${BASE_URL}/api/admin/login`, formData);
+            // const res = await axios.post(`${BASE_URL}/api/auth/login`, formData);
+            const res = await axios.post(`http://localhost:1000/api/auth/login`, formData , {withCredentials : true});
             const data = res.data;
 
-            const token = `Bearer ${data.token}`;
-            if (res.status === 200 && token) {
-                localStorage.setItem('Authorization', token);
-                router.push('/admin/dashboard');
+            if (res.status === 200 && data.accessToken && data.role) {
+                // Save token and role in context
+                setAccessToken(data.accessToken);
+                setUserRole(data.role);
+
+                // Redirect based on role
+                if (data.role === 'talukaOfficer') {
+                    router.push('/taluka-officer');
+                } else if (data.role === 'superAdmin') {
+                    router.push('/super-admin');
+                }else if (data.role === 'districtOfficer') {
+                    router.push('/district-officer');
+                } else {
+                    router.push('/');
+                }
             } else {
                 setError('Invalid credentials or server error');
             }
         } catch (err) {
             console.error('Login error:', err);
-            const errorMessage = 'Login failed. Please try again.';
-            setError(errorMessage);
+            setError(err.response?.data?.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -62,6 +74,7 @@ export default function LoginPage() {
     }
 
     return (
+        // your existing JSX unchanged
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8">
                 <div className="bg-white rounded-lg shadow-md p-8">
@@ -72,7 +85,6 @@ export default function LoginPage() {
                         </p>
                     </div>
 
-                    {/* Error Message */}
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700">
                             <p>{error}</p>
