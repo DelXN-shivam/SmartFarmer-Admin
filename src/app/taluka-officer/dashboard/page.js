@@ -18,7 +18,7 @@ export default function Dashboard() {
     const getFarmerCount = async () => {
         try {
             setLoading(true)
-            const res = await axios.get(`${BASE_URL}/api/farmers/count`, {
+            const res = await axios.get(`${BASE_URL}/api/farmers?count=true`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -38,7 +38,7 @@ export default function Dashboard() {
     const getVerifierCount = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${BASE_URL}/api/verifiers/count`, {
+            const res = await axios.get(`${BASE_URL}/api/verifiers?count=true`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
