@@ -36,7 +36,7 @@ export default function LoginPage() {
             }
 
             // const res = await axios.post(`${BASE_URL}/api/auth/login`, formData);
-            const res = await axios.post(`http://localhost:1000/api/auth/login`, formData , {withCredentials : true});
+            const res = await axios.post(` https://smart-farmer-backend.vercel.app/api/auth/login`, formData , {withCredentials : true});
             const data = res.data;
 
             if (res.status === 200 && data.accessToken && data.role) {
