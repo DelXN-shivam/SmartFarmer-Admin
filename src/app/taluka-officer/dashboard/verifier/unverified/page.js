@@ -88,7 +88,7 @@ export default function UnverifiedVerifiers() {
       }
     } catch (err) {
       console.error(err);
-      console.log(`http://localhost:1000/api/verifier/update/${verifierId}`)
+      console.log(`${BASE_URL}/api/verifier/update/${verifierId}`)
       toast.error("Failed to verify verifier");
     }
   };
