@@ -14,7 +14,7 @@ export default function SuperAdminHome() {
 
     const fetchSecretData = async () => {
       try {
-        const res = await axios.get('http://localhost:1000/api/super-admin/super-secret', {
+        const res = await axios.get( 'https://smart-farmer-backend.vercel.app/api/super-admin/super-secret', {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
