@@ -4,6 +4,7 @@ import { Users, UserCheck } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
+
 export default function Dashboard() {
     // Sample data - you can replace this with actual data from your API
     const [farmerCount, setFarmerCount] = useState();
@@ -17,7 +18,7 @@ export default function Dashboard() {
     const getFarmerCount = async () => {
         try {
             setLoading(true)
-            const res = await axios.get(`${BASE_URL}/api/farmer/count`, {
+            const res = await axios.get(`${BASE_URL}/api/farmers/count`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -37,7 +38,7 @@ export default function Dashboard() {
     const getVerifierCount = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${BASE_URL}/api/verifier/count`, {
+            const res = await axios.get(`${BASE_URL}/api/verifiers/count`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
