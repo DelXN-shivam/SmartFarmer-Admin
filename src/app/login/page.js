@@ -38,19 +38,37 @@ export default function LoginPage() {
             // const res = await axios.post(`${BASE_URL}/api/auth/login`, formData);
             const res = await axios.post(` https://smart-farmer-backend.vercel.app/api/auth/admin/login`, formData , {withCredentials : true});
             const data = res.data;
+            console.log('Login response:', data);
 
-            if (res.status === 200 && data.accessToken && data.role) {
+            // if (res.status === 200 && data.accessToken && data.role) {
+            //     // Save token and role in context
+            //     setAccessToken(data.accessToken);
+            //     setUserRole(data.role);
+            
+            if (res.status === 200 && data.token) {
                 // Save token and role in context
-                setAccessToken(data.accessToken);
-                setUserRole(data.role);
+                setAccessToken(data.token);
+                setUserRole(data.data?.role || 'admin'); // Use optional chaining
 
                 // Redirect based on role
-                if (data.role === 'talukaOfficer') {
+                // if (data.role === 'talukaOfficer') {
+                //     router.push('/taluka-officer');
+                // } else if (data.role === 'superAdmin') {
+                //     router.push('/super-admin');
+                // }else if (data.role === 'districtOfficer') {
+                //     router.push('/district-officer');
+                // } else {
+                //     router.push('/');
+                // }
+
+                if (data.data?.role === 'talukaOfficer') {
                     router.push('/taluka-officer');
-                } else if (data.role === 'superAdmin') {
+                } else if (data.data?.role === 'superAdmin') {
                     router.push('/super-admin');
-                }else if (data.role === 'districtOfficer') {
+                } else if (data.data?.role === 'districtOfficer') {
                     router.push('/district-officer');
+                } else if (data.data?.role === 'admin') {
+                    router.push('/admin-dashboard'); // Add admin route
                 } else {
                     router.push('/');
                 }
