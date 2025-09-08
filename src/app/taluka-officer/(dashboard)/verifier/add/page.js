@@ -647,7 +647,7 @@ const AddVerifierPage = () => {
       if (!token) {
         toast.error("Authentication token not found, redirecting to login")
         setTimeout(async () => {
-          await router.push("/admin/login")
+          await router.push("//login")
         }, 3000)
         return
       }
@@ -696,7 +696,7 @@ const AddVerifierPage = () => {
         toast.error("Authentication Failed, redirecting to login page")
         localStorage.removeItem("Authorization")
         setTimeout(() => {
-          router.push("/admin/login")
+          router.push("/login")
         }, 3000)
         return
       }

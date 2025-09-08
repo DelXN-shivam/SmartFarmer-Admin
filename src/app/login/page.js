@@ -12,9 +12,26 @@ export default function LoginPage() {
         email: '',
         password: ''
     });
+    const [rememberMe, setRememberMe] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+
+    // Load saved credentials on component mount
+    useEffect(() => {
+        const savedEmail = localStorage.getItem('Email');
+        // const savedPassword = localStorage.getItem('adminPassword');
+        const savedRememberMe = localStorage.getItem('rememberMe') === 'true';
+
+        if (savedEmail) {
+            setFormData(prev => ({ ...prev, email: savedEmail }));
+        }
+
+        if (savedRememberMe) {
+            setFormData(prev => ({ ...prev, password: savedPassword }));
+            setRememberMe(savedRememberMe);
+        }
+    }, []);
 
     const handleChange = (e) => {
         setFormData({
@@ -24,51 +41,51 @@ export default function LoginPage() {
         if (error) setError('');
     };
 
-    const handleSubmit = async () => {
+    const handleRememberMeChange = (e) => {
+        setRememberMe(e.target.checked);
+    };
+
+    const handleSubmit = async (e) => {
+        // Prevent default form submission behavior
+        if (e) e.preventDefault();
+
         try {
             setLoading(true);
             setError('');
-            
+
             if (!formData.email || !formData.password) {
                 setError('Please fill in all fields');
                 setLoading(false);
                 return;
             }
-
-            // const res = await axios.post(`${BASE_URL}/api/auth/login`, formData);
-            const res = await axios.post(` https://smart-farmer-backend.vercel.app/api/auth/admin/login`, formData , {withCredentials : true});
+            const res = await axios.post(`${BASE_URL}/api/auth/admin/login`, formData, { withCredentials: true }); //${BASE_URL}/api/auth/admin/login
             const data = res.data;
             console.log('Login response:', data);
 
-            // if (res.status === 200 && data.accessToken && data.role) {
-            //     // Save token and role in context
-            //     setAccessToken(data.accessToken);
-            //     setUserRole(data.role);
-            
             if (res.status === 200 && data.token) {
-                // Save token and role in context
+                // Save email and password if "Remember me" is checked
+                if (rememberMe) {
+                    localStorage.setItem('Email', formData.email);
+                    localStorage.setItem('Authorization', `Bearer ${data.token}`);
+                    // localStorage.setItem('adminPassword', formData.password);
+                    // localStorage.setItem('rememberMe', 'true');
+                } else {
+                    // Clear saved password if "Remember me" is unchecked
+                    // localStorage.removeItem('adminPassword');
+                    localStorage.setItem('rememberMe', 'false');
+                }
+                
                 setAccessToken(data.token);
-                setUserRole(data.data?.role || 'admin'); // Use optional chaining
-
-                // Redirect based on role
-                // if (data.role === 'talukaOfficer') {
-                //     router.push('/taluka-officer');
-                // } else if (data.role === 'superAdmin') {
-                //     router.push('/super-admin');
-                // }else if (data.role === 'districtOfficer') {
-                //     router.push('/district-officer');
-                // } else {
-                //     router.push('/');
-                // }
+                setUserRole(data.data?.role || 'admin');
 
                 if (data.data?.role === 'talukaOfficer') {
-                    router.push('/taluka-officer');
+                    router.push('/taluka-officer    ');
                 } else if (data.data?.role === 'superAdmin') {
                     router.push('/super-admin');
                 } else if (data.data?.role === 'districtOfficer') {
                     router.push('/district-officer');
                 } else if (data.data?.role === 'admin') {
-                    router.push('/admin-dashboard'); // Add admin route
+                    router.push('/admin-dashboard');
                 } else {
                     router.push('/');
                 }
@@ -83,6 +100,13 @@ export default function LoginPage() {
         }
     };
 
+    // Handle Enter key press
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleSubmit();
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -92,7 +116,6 @@ export default function LoginPage() {
     }
 
     return (
-        // your existing JSX unchanged
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8">
                 <div className="bg-white rounded-lg shadow-md p-8">
@@ -109,7 +132,7 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    <div className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Email Address
@@ -119,8 +142,10 @@ export default function LoginPage() {
                                 type="email"
                                 value={formData.email}
                                 onChange={handleChange}
+                                onKeyPress={handleKeyPress}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="admin@example.com"
+                                required
                             />
                         </div>
 
@@ -133,8 +158,10 @@ export default function LoginPage() {
                                 type="password"
                                 value={formData.password}
                                 onChange={handleChange}
+                                onKeyPress={handleKeyPress}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="••••••••"
+                                required
                             />
                         </div>
 
@@ -142,6 +169,8 @@ export default function LoginPage() {
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={handleRememberMeChange}
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
                                 <span className="ml-2 block text-sm text-gray-700">
@@ -149,21 +178,20 @@ export default function LoginPage() {
                                 </span>
                             </div>
 
-                            <button className="text-sm text-blue-600 hover:text-blue-500">
+                            <button type="button" className="text-sm text-blue-600 hover:text-blue-500">
                                 Forgot password?
                             </button>
                         </div>
 
                         <button
-                            onClick={handleSubmit}
+                            type="submit"
                             disabled={loading}
-                            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 ${
-                                loading ? 'opacity-70 cursor-not-allowed' : ''
-                            }`}
+                            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''
+                                }`}
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

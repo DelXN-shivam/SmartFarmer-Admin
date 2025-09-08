@@ -37,18 +37,18 @@ export default function DashboardLayout({ children }) {
       label: 'Farmer', 
       href: '/admin/users',
       subItems: [
-        { label: 'All Farmers', href: '/admin/dashboard/farmer/all' }
+        { label: 'All Farmers', href: '/taluka-officer/farmer/all' }
       ]
     },
     { 
       icon: Contact, 
       label: 'Verifier', 
-      href: '/admin/dashboard/verifier',
+      href: 'taluka-officer/verifier/all',
       subItems: [
-        { label: 'All Verifiers', href: '/admin/dashboard/verifier/all' },
+        { label: 'All Verifiers', href: '/taluka-officer/verifier/all' },
         //{ label: 'Verified', href: '/admin/dashboard/verifier/verified' },
         //{ label: 'Unverified', href: '/admin/dashboard/verifier/unverified' },
-        { label: 'Add Verifier', href: '/admin/dashboard/verifier/add' }
+        { label: 'Add Verifier', href: '/taluka-officer/verifier/add' }
         
       ]
     },

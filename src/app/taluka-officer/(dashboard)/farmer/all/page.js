@@ -24,7 +24,7 @@ export default function FarmersPage() {
       const token = localStorage.getItem("Authorization")?.split(" ")[1];
       if (!token) {
         toast.error('Authentication token not found. Redirecting...');
-        router.push('/admin/login');
+        router.push('//login');
         return;
       }
 
@@ -49,7 +49,7 @@ export default function FarmersPage() {
       if (err.response?.status === 401) {
         toast.error('Authentication fialed please login again');
         localStorage.removeItem("Authorization");
-        router.push('/admin/login');
+        router.push('//login');
       }
     } finally {
       setLoading(false);

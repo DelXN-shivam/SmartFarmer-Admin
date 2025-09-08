@@ -27,7 +27,7 @@ export default function VerifiersPage() {
       const token = localStorage.getItem("Authorization")?.split(" ")[1]
       if (!token) {
         toast.error("Session expired. Please login again.")
-        router.push("/admin/login")
+        router.push("//login")
         return
       }
       const response = await axios.get(`${BASE_URL}/api/verifier`, {
@@ -48,7 +48,7 @@ export default function VerifiersPage() {
       if (err.response?.status === 401) {
         localStorage.removeItem("Authorization")
         toast.error("Session expired. Redirecting to login...")
-        setTimeout(() => router.push("/admin/login"), 2000)
+        setTimeout(() => router.push("//login"), 2000)
       }
     } finally {
       setLoading(false)
@@ -64,7 +64,7 @@ export default function VerifiersPage() {
       const token = localStorage.getItem("Authorization")?.split(" ")[1]
       if (!token) {
         toast.error("Authentication required")
-        return router.push("/admin/login")
+        return router.push("//login")
       }
       const response = await axios.put(
         `${BASE_URL}/api/verifier/${verifierToVerify._id}/verify`,
@@ -86,7 +86,7 @@ export default function VerifiersPage() {
       const token = localStorage.getItem("Authorization")?.split(" ")[1]
       if (!token) {
         toast.error("Authentication required")
-        return router.push("/admin/login")
+        return router.push("//login")
       }
       const response = await axios.patch(`${BASE_URL}/api/verifier/update/${updatedVerifier._id}`, updatedVerifier, {
         headers: { Authorization: `Bearer ${token}` },

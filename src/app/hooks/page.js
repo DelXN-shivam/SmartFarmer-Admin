@@ -19,7 +19,7 @@ export const useAuth = () => {
       // ✅ Check if storedToken is null before using it
       if (!storedToken) {
         toast.error("Please login to continue");
-        router.replace("/admin/login");
+        router.replace("//login");
         setChecking(false);
         return;
       }
@@ -55,7 +55,7 @@ export const useAuth = () => {
           toast.error("Authentication failed. Please login again.");
         }
 
-        router.replace("/admin/login");
+        router.replace("//login");
       } finally {
         setChecking(false);
       }
@@ -69,7 +69,7 @@ export const useAuth = () => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    router.replace("/admin/login");
+    router.replace("//login");
   };
 
   return { checking, user, token, logout };
