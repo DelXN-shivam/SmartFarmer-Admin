@@ -1,29 +1,30 @@
-"use client"
-import { useState } from 'react';
-import { 
-  Menu, 
-  X, 
-  Home, 
-  Users, 
-  Settings, 
-  BarChart3, 
-  Package, 
-  FileText, 
-  Bell, 
+"use client";
+import { useState } from "react";
+import {
+  Menu,
+  X,
+  Home,
+  Users,
+  Settings,
+  BarChart3,
+  Package,
+  FileText,
+  Bell,
   Search,
   User,
   LogOut,
   ChevronDown,
-  ChevronRight , 
-  Contact
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+  ChevronRight,
+  Contact,
+  Trees,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
-  const [activeItem, setActiveItem] = useState('Dashboard'); // Add active item state
+  const [activeItem, setActiveItem] = useState("Dashboard"); // Add active item state
   const [activeSubItem, setActiveSubItem] = useState(null); // Track active sub-item
   const router = useRouter();
   const sidebarItems = [
@@ -31,6 +32,23 @@ export default function DashboardLayout({ children }) {
       icon: Home,
       label: "Dashboard",
       href: "/taluka-officer",
+    },
+    {
+      icon: Trees,
+      label: "Crops",
+      href: "/taluka-officer/crop/all",
+      subItems: [
+        { label: "All Crops", href: "/taluka-officer/crop/all" },
+        { label: "All Verified Crops", href: "/taluka-officer/crop/verified" },
+        {
+          label: "All Pending Crops",
+          href: "/taluka-officer/crop/pending",
+        },
+        {
+          label: "All Rejected Crops",
+          href: "/taluka-officer/crop/rejected",
+        },
+      ],
     },
     {
       icon: Users,
