@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation"
 import VerifierCard from "@/components/ui/VerifierCard"
 import { Input } from "@/components/ui/input"
 
-export default function VerifiersPage() {
+export default function AllTalukaOfficers() {
   const [loading, setLoading] = useState(true)
   const [verifiers, setVerifiers] = useState([])
   const [error, setError] = useState(null)
@@ -30,7 +30,7 @@ export default function VerifiersPage() {
         router.push("/login");
         return
       }
-      const response = await axios.get(`${BASE_URL}/api/verifier`, {
+      const response = await axios.get(`${BASE_URL}/api/taluka-officer`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -152,7 +152,7 @@ export default function VerifiersPage() {
   if (error) {
     return (
       <div className="p-4 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Verifier Directory</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Taluka Officer Directory</h1>
         <div className="bg-red-50 border-l-4 border-red-500 p-4">
           <div className="flex">
             <div className="ml-3">
@@ -173,14 +173,14 @@ export default function VerifiersPage() {
   return (
     <div className="p-4 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-16">
-        <h1 className="text-3xl font-bold text-gray-900">Verifier Directory</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Taluka Officer Directory</h1>
         <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
           
           {/* Search Input */}
           <div className="relative w-full sm:w-auto">
             <Input
               type="text"
-              placeholder="Search verifiers..."
+              placeholder="Search taluka officers..."
               className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

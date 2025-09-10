@@ -23,17 +23,20 @@ export default function UnverifiedVerifiers() {
   const fetchUnverifiedVerifiers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/verifier/unverified?flag=false`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(`${BASE_URL}/api/verifier/unverified?flag=false`)
+      const res = await axios.get(
+        `${BASE_URL}/api/verifier/unverified?flag=false`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(`${BASE_URL}/api/verifier/unverified?flag=false`);
       const unverified = res.data.verifiers || [];
       if (unverified.length === 0) {
         toast.success("No unverified verifiers left. Redirecting...");
         setTimeout(() => {
-          router.push("/admin/dashboard");
+          router.back();
         }, 2000);
       } else {
         setVerifiers(unverified);
@@ -42,7 +45,7 @@ export default function UnverifiedVerifiers() {
       if (err.response?.status === 409) {
         toast.success("No unverified verifiers left. Redirecting...");
         setTimeout(() => {
-          router.push("/admin/dashboard");
+          router.back();
         }, 1500);
       } else {
         console.error(err);
@@ -61,25 +64,29 @@ export default function UnverifiedVerifiers() {
   // Handle verification of a specific verifier
   const handleVerify = async (verifierId) => {
     try {
-      const res = await axios.patch(`${BASE_URL}/api/verifier/update/${verifierId}`, {
-        isVerified: true,
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await axios.patch(
+        `${BASE_URL}/api/verifier/update/${verifierId}`,
+        {
+          isVerified: true,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (res.status === 200) {
         toast.success("Verifier verified successfully");
 
         // Correct way to update and check remaining verifiers
-        setVerifiers(prev => {
-          const updated = prev.filter(v => v._id !== verifierId);
+        setVerifiers((prev) => {
+          const updated = prev.filter((v) => v._id !== verifierId);
 
           if (updated.length === 0) {
             toast.success("All verifiers are now verified!");
             setTimeout(() => {
-              router.push("/admin/dashboard");
+              router.back();
             }, 1500);
           }
 
@@ -88,33 +95,37 @@ export default function UnverifiedVerifiers() {
       }
     } catch (err) {
       console.error(err);
-      console.log(`${BASE_URL}/api/verifier/update/${verifierId}`)
+      console.log(`${BASE_URL}/api/verifier/update/${verifierId}`);
       toast.error("Failed to verify verifier");
     }
   };
 
-
   // Handle deletion of a specific verifier
   const handleDelete = async (verifierId) => {
     try {
-      const res = await axios.delete(`${BASE_URL}/api/verifier/delete/${verifierId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await axios.delete(
+        `${BASE_URL}/api/verifier/delete/${verifierId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (res.status === 200) {
         toast.success("Verifier deleted successfully");
 
         // Remove the deleted verifier from local state
-        setVerifiers(prev => prev.filter(v => v._id !== verifierId));
+        setVerifiers((prev) => prev.filter((v) => v._id !== verifierId));
 
         // Check if there are any remaining verifiers
-        const remainingVerifiers = verifiers.filter(v => v._id !== verifierId);
+        const remainingVerifiers = verifiers.filter(
+          (v) => v._id !== verifierId
+        );
         if (remainingVerifiers.length === 0) {
           toast.success("All verifiers processed. Redirecting...");
           setTimeout(() => {
-            router.push("/admin/dashboard");
+            router.back();
           }, 1500);
         }
       }
@@ -144,13 +155,18 @@ export default function UnverifiedVerifiers() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">UnVerified Verifiers</h1>
-        <Badge  variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-26 h-8">
+        <h1 className="text-2xl font-bold text-gray-800">
+          UnVerified Verifiers
+        </h1>
+        <Badge
+          variant="outline"
+          className="bg-blue-50 text-blue-700 border-blue-200 w-26 h-8"
+        >
           <FileText className="w-8 h-8 mr-1" />
           Count : {verifiers.length}
         </Badge>
         <button
-          onClick={() => router.push("/admin/dashboard")}
+          onClick={() => router.push("/taluka-officer/verifier/all")}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Back to Dashboard
@@ -163,12 +179,16 @@ export default function UnverifiedVerifiers() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
-          {verifiers.map(verifier => (
+          {verifiers.map((verifier) => (
             <VerifierCard
               key={verifier._id}
               verifier={verifier}
-              onDelete={() => { handleDelete(verifier._id) }}
-              onVerify={() => { handleVerify(verifier._id) }}
+              onDelete={() => {
+                handleDelete(verifier._id);
+              }}
+              onVerify={() => {
+                handleVerify(verifier._id);
+              }}
             />
           ))}
         </div>

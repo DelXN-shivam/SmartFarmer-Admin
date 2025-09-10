@@ -1,72 +1,63 @@
-"use client"
-import { useState } from 'react';
-import { 
-  Menu, 
-  X, 
-  Home, 
-  Users, 
-  Settings, 
-  BarChart3, 
-  Package, 
-  FileText, 
-  Bell, 
+"use client";
+import { useState } from "react";
+import {
+  Menu,
+  X,
+  Home,
+  Users,
+  Settings,
+  BarChart3,
+  Package,
+  FileText,
+  Bell,
   Search,
   User,
   LogOut,
   ChevronDown,
-  ChevronRight , 
-  Contact
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+  ChevronRight,
+  Contact,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
-  const [activeItem, setActiveItem] = useState('Dashboard'); // Add active item state
+  const [activeItem, setActiveItem] = useState("Dashboard"); // Add active item state
   const [activeSubItem, setActiveSubItem] = useState(null); // Track active sub-item
   const router = useRouter();
   const sidebarItems = [
     {
       icon: Home,
       label: "Dashboard",
-      href: "/taluka-officer",
+      href: "/super-admin",
     },
     {
       icon: Users,
-      label: "Farmer",
-      href: "/taluka-officer/farmer/all",
-      subItems: [{ label: "All Farmers", href: "/taluka-officer/farmer/all" }],
+      label: "District Officer",
+      href: "/district-officer",
+      subItems: [
+        { label: "All District Officers", href: "/super-admin/district-officer/all" },
+        { label: "Add District Officers", href: "/super-admin/district-officer/add" },
+      ],
     },
     {
       icon: Contact,
-      label: "Verifier",
-      href: "taluka-officer/verifier/all",
+      label: "Taluka Officer",
+      href: "taluka-officer",
       subItems: [
-        { label: "All Verifiers", href: "/taluka-officer/verifier/all" },
-        { label: "Verified", href: "/taluka-officer/verifier/verified" },
-        { label: "Unverified", href: "/taluka-officer/verifier/unverified" },
-        { label: "Add Verifier", href: "/taluka-officer/verifier/add" },
+        { label: "All Taluka Officers", href: "/super-admin/taluka-officer/all" },
+        { label: "Add Taluka Officers", href: "/super-admin/taluka-officer/add" },
       ],
     },
     {
       icon: BarChart3,
       label: "Analytics",
-      href: "/admin/analytics",
+      href: "/super-admin/analytics",
       subItems: [
-        { label: "Overview", href: "/admin/analytics/overview" },
-        { label: "Reports", href: "/admin/analytics/reports" },
-        { label: "Export", href: "/admin/analytics/export" },
-      ],
-    },
-    {
-      icon: FileText,
-      label: "Reports",
-      href: "/admin/reports",
-      subItems: [
-        { label: "Monthly", href: "/admin/reports/monthly" },
-        { label: "Quarterly", href: "/admin/reports/quarterly" },
-        { label: "Annual", href: "/admin/reports/annual" },
+        { label: "Overview", href: "/super-admin/analytics" },
+        { label: "Reports", href: "/super-admin/analytics" },
+        { label: "Export", href: "/super-admin/analytics" },
       ],
     },
   ];
@@ -122,10 +113,10 @@ export default function DashboardLayout({ children }) {
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">TO</span>
+              <span className="text-white font-bold text-lg">SA</span>
             </div>
             <span className="ml-2 text-xl font-semibold text-gray-800">
-              Taluka Officer
+              Super Admin
             </span>
           </div>
           <button
@@ -212,15 +203,6 @@ export default function DashboardLayout({ children }) {
               >
                 <Menu className="w-5 h-5" />
               </button>
-
-              {/* <div className="relative ml-4 lg:ml-0">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div> */}
             </div>
 
             <div className="flex items-center space-x-4">
