@@ -6,11 +6,20 @@ import { toast } from "sonner";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function Dashboard() {
-  const [farmerCount, setFarmerCount] = useState();
-  const [verifierCount, setVerifierCount] = useState();
+  // const [farmerCount, setDistrictOfficerCount] = useState();
+  const [DistrictOfficerCount, setDistrictOfficerCount] = useState();
+
+  // const [verifierCount, setVerifierCount] = useState();
+  const [TalukaOfficerCount, setTalukaOfficerCount] = useState();
+
   const [loading, setLoading] = useState(false);
-  const [farmerLoading, setFarmerLoading] = useState(false);
-  const [verifierLoading, setVerifierLoading] = useState(false);
+  // const [farmerLoading, setFarmerLoading] = useState(false);
+  const [DistrictOfficerLoading, setDistrictOfficerLoading] = useState(false);
+
+
+  // const [verifierLoading, setVerifierLoading] = useState(false);
+  const [TalukaOfficerLoading, setTalukaOfficerLoading] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [adminForm, setAdminForm] = useState({
     name: "",
@@ -24,39 +33,39 @@ export default function Dashboard() {
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
   const { accessToken } = useContext(AuthContext);
 
-  const getFarmerCount = async () => {
+  const getDistrictOfficerCount = async () => {
     try {
-      setFarmerLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/farmer/count`);
-      console.log("Farmer count response:", res.data);
+      setDistrictOfficerLoading(true);
+      const res = await axios.get(`${BASE_URL}/api/district-officer/count`);
+      console.log("District Officer count response:", res.data);
       if (res.status === 200) {
-        setFarmerCount(res.data.count);
+        setDistrictOfficerCount(res.data.count);
       }
     } catch (err) {
       console.error("Farmer count error:", err);
-      toast.error("Error while calculating Farmer Count");
+      toast.error("Error while calculating District Officer Count");
     } finally {
-      setFarmerLoading(false);
+      setDistrictOfficerLoading(false);
     }
   };
 
-  const getVerifierCount = async () => {
+  const getTalukaOfficerCount = async () => {
     try {
-      setVerifierLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/verifier/count`);
-      console.log("Verifier count response:", res.data);
+      setTalukaOfficerLoading(true);
+      const res = await axios.get(`${BASE_URL}/api/taluka-officer/count`);
+      console.log("Taluka Officer count response:", res.data);
       if (res.status === 200) {
-        setVerifierCount(res.data.count);
+        setTalukaOfficerCount(res.data.count);
       }
     } catch (err) {
-      console.error("Verifier count error:", err);
+      console.error("Taluka officer count error:", err);
       if (err.response?.status === 401) {
         toast.error("Please login again");
       } else {
-        toast.error("Error while calculating Verifier Count");
+        toast.error("Error while calculating Taluka officer Count");
       }
     } finally {
-      setVerifierLoading(false);
+      setTalukaOfficerLoading(false);
     }
   };
 
@@ -169,8 +178,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     console.log("Dashboard mounted");
-    getFarmerCount();
-    getVerifierCount();
+    getDistrictOfficerCount();
+    getTalukaOfficerCount();
   }, [accessToken]);
 
   return (
@@ -198,19 +207,19 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
           <StatCard
             title="Total District Officers"
-            value={farmerCount}
+            value={DistrictOfficerCount}
             icon={Users}
             bgColor="bg-blue-100"
             iconColor="text-blue-600"
-            loading={farmerLoading}
+            loading={DistrictOfficerLoading}
           />
           <StatCard
             title="Total Taluka Officers"
-            value={verifierCount}
+            value={TalukaOfficerCount}
             icon={UserCheck}
             bgColor="bg-green-100"
             iconColor="text-green-600"
-            loading={verifierLoading}
+            loading={TalukaOfficerLoading}
           />
         </div>
 
