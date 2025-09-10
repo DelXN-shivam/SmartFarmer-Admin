@@ -209,168 +209,220 @@ const maharashtraDistricts = {
   ],
 }
 
-const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
-  const [selectedVerifier, setSelectedVerifier] = useState(null)
-  const [loading, setLoading] = useState(false)
+const VerifierCard = ({
+  verifiers,
+  onVerify,
+  onEdit,
+  isTalukasAllocated,
+  category,
+}) => {
+  const [selectedVerifier, setSelectedVerifier] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const maskAadhaar = (aadhaar) => aadhaar?.replace(/(\d{4})(\d{4})(\d{4})/, "****-****-$3") || "Not provided"
+  const maskAadhaar = (aadhaar) =>
+    aadhaar?.replace(/(\d{4})(\d{4})(\d{4})/, "****-****-$3") || "Not provided";
   const formatDocumentName = (doc) =>
     doc
       .replace(/[_-]/g, " ")
       .replace(/\.(jpg|pdf|png)$/i, "")
-      .toUpperCase()
+      .toUpperCase();
 
-  const openVerifierDetails = (verifier) => setSelectedVerifier(verifier)
-  const closeVerifierDetails = () => setSelectedVerifier(null)
+  const openVerifierDetails = (verifier) => setSelectedVerifier(verifier);
+  const closeVerifierDetails = () => setSelectedVerifier(null);
 
   const VerifierDetailOverlay = ({ verifier, onClose, onEdit }) => {
-    const [isEditing, setIsEditing] = useState(false)
+    const [isEditing, setIsEditing] = useState(false);
     const [editableVerifier, setEditableVerifier] = useState(() => ({
       ...verifier,
       location: verifier.location ? { ...verifier.location } : undefined,
-      submittedDocuments: verifier.submittedDocuments ? [...verifier.submittedDocuments] : [],
-      allocatedTaluka: verifier.allocatedTaluka ? [...verifier.allocatedTaluka] : [],
-    }))
+      submittedDocuments: verifier.submittedDocuments
+        ? [...verifier.submittedDocuments]
+        : [],
+      allocatedTaluka: verifier.allocatedTaluka
+        ? [...verifier.allocatedTaluka]
+        : [],
+    }));
 
     // States for main Taluka dropdown in overlay
-    const [talukaSuggestionsOverlay, setTalukaSuggestionsOverlay] = useState([])
-    const [showTalukaDropdownOverlay, setShowTalukaDropdownOverlay] = useState(false)
-    const talukaDropdownRefOverlay = useRef(null)
+    const [talukaSuggestionsOverlay, setTalukaSuggestionsOverlay] = useState(
+      []
+    );
+    const [showTalukaDropdownOverlay, setShowTalukaDropdownOverlay] =
+      useState(false);
+    const talukaDropdownRefOverlay = useRef(null);
 
     // States for Allocate Talukas in overlay
-    const [currentAllocatedTaluka, setCurrentAllocatedTaluka] = useState("")
-    const [allocatedTalukaSuggestions, setAllocatedTalukaSuggestions] = useState([])
-    const [showAllocatedTalukaDropdown, setShowAllocatedTalukaDropdown] = useState(false)
-    const allocatedTalukaDropdownRef = useRef(null)
+    const [currentAllocatedTaluka, setCurrentAllocatedTaluka] = useState("");
+    const [allocatedTalukaSuggestions, setAllocatedTalukaSuggestions] =
+      useState([]);
+    const [showAllocatedTalukaDropdown, setShowAllocatedTalukaDropdown] =
+      useState(false);
+    const allocatedTalukaDropdownRef = useRef(null);
 
     // Determine if district is filled for enabling taluka inputs
-    const isDistrictFilled = !!editableVerifier.district
+    const isDistrictFilled = !!editableVerifier.district;
 
     useEffect(() => {
       const handleClickOutside = (event) => {
-        if (allocatedTalukaDropdownRef.current && !allocatedTalukaDropdownRef.current.contains(event.target)) {
-          setShowAllocatedTalukaDropdown(false)
+        if (
+          allocatedTalukaDropdownRef.current &&
+          !allocatedTalukaDropdownRef.current.contains(event.target)
+        ) {
+          setShowAllocatedTalukaDropdown(false);
         }
-        if (talukaDropdownRefOverlay.current && !talukaDropdownRefOverlay.current.contains(event.target)) {
-          setShowTalukaDropdownOverlay(false)
+        if (
+          talukaDropdownRefOverlay.current &&
+          !talukaDropdownRefOverlay.current.contains(event.target)
+        ) {
+          setShowTalukaDropdownOverlay(false);
         }
-      }
-      document.addEventListener("click", handleClickOutside)
-      return () => document.removeEventListener("click", handleClickOutside)
-    }, [])
+      };
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
 
     const handleInputChange = (e) => {
-      const { name, value } = e.target
-      setEditableVerifier((prev) => ({ ...prev, [name]: value }))
-    }
+      const { name, value } = e.target;
+      setEditableVerifier((prev) => ({ ...prev, [name]: value }));
+    };
 
     // Functions for main Taluka dropdown in overlay
     const handleTalukaInputOverlay = (e) => {
-      const { value } = e.target
+      const { value } = e.target;
       setEditableVerifier((prev) => ({
         ...prev,
         taluka: value,
-      }))
-      if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+      }));
+      if (
+        editableVerifier.district &&
+        maharashtraDistricts[editableVerifier.district]
+      ) {
         if (value.trim() === "") {
-          setTalukaSuggestionsOverlay(maharashtraDistricts[editableVerifier.district])
+          setTalukaSuggestionsOverlay(
+            maharashtraDistricts[editableVerifier.district]
+          );
         } else {
           setTalukaSuggestionsOverlay(
             maharashtraDistricts[editableVerifier.district].filter((t) =>
-              t.toLowerCase().includes(value.trim().toLowerCase()),
-            ),
-          )
+              t.toLowerCase().includes(value.trim().toLowerCase())
+            )
+          );
         }
-        setShowTalukaDropdownOverlay(true)
+        setShowTalukaDropdownOverlay(true);
       }
-    }
+    };
 
     const handleTalukaSelectOverlay = (taluka) => {
       setEditableVerifier((prev) => ({
         ...prev,
         taluka: taluka,
-      }))
-      setTalukaSuggestionsOverlay([])
-      setShowTalukaDropdownOverlay(false)
-    }
+      }));
+      setTalukaSuggestionsOverlay([]);
+      setShowTalukaDropdownOverlay(false);
+    };
 
     // Functions for Allocate Talukas in overlay
     const handleAllocatedTalukaInput = (e) => {
-      const { value } = e.target
-      setCurrentAllocatedTaluka(value)
-      if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+      const { value } = e.target;
+      setCurrentAllocatedTaluka(value);
+      if (
+        editableVerifier.district &&
+        maharashtraDistricts[editableVerifier.district]
+      ) {
         if (value.trim() === "") {
-          setAllocatedTalukaSuggestions(maharashtraDistricts[editableVerifier.district])
+          setAllocatedTalukaSuggestions(
+            maharashtraDistricts[editableVerifier.district]
+          );
         } else {
           setAllocatedTalukaSuggestions(
             maharashtraDistricts[editableVerifier.district].filter(
               (t) =>
-                t.toLowerCase().includes(value.trim().toLowerCase()) && !editableVerifier.allocatedTaluka.includes(t),
-            ),
-          )
+                t.toLowerCase().includes(value.trim().toLowerCase()) &&
+                !editableVerifier.allocatedTaluka.includes(t)
+            )
+          );
         }
-        setShowAllocatedTalukaDropdown(true)
+        setShowAllocatedTalukaDropdown(true);
       }
-    }
+    };
 
     const handleAllocatedTalukaSelect = (taluka) => {
-      setCurrentAllocatedTaluka(taluka)
-      setShowAllocatedTalukaDropdown(false)
-    }
+      setCurrentAllocatedTaluka(taluka);
+      setShowAllocatedTalukaDropdown(false);
+    };
 
     const handleAddAllocatedTaluka = () => {
-      if (currentAllocatedTaluka && !editableVerifier.allocatedTaluka.includes(currentAllocatedTaluka)) {
+      if (
+        currentAllocatedTaluka &&
+        !editableVerifier.allocatedTaluka.includes(currentAllocatedTaluka)
+      ) {
         setEditableVerifier((prev) => ({
           ...prev,
           allocatedTaluka: [...prev.allocatedTaluka, currentAllocatedTaluka],
-        }))
-        setCurrentAllocatedTaluka("")
-        if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+        }));
+        setCurrentAllocatedTaluka("");
+        if (
+          editableVerifier.district &&
+          maharashtraDistricts[editableVerifier.district]
+        ) {
           setAllocatedTalukaSuggestions(
             maharashtraDistricts[editableVerifier.district].filter(
-              (t) => !editableVerifier.allocatedTaluka.includes(t) && t !== currentAllocatedTaluka,
-            ),
-          )
+              (t) =>
+                !editableVerifier.allocatedTaluka.includes(t) &&
+                t !== currentAllocatedTaluka
+            )
+          );
         }
       }
-    }
+    };
 
     const handleRemoveAllocatedTaluka = (talukaToRemove) => {
       setEditableVerifier((prev) => ({
         ...prev,
-        allocatedTaluka: prev.allocatedTaluka.filter((t) => t !== talukaToRemove),
-      }))
-      if (editableVerifier.district && maharashtraDistricts[editableVerifier.district]) {
+        allocatedTaluka: prev.allocatedTaluka.filter(
+          (t) => t !== talukaToRemove
+        ),
+      }));
+      if (
+        editableVerifier.district &&
+        maharashtraDistricts[editableVerifier.district]
+      ) {
         setAllocatedTalukaSuggestions(
           maharashtraDistricts[editableVerifier.district].filter(
-            (t) => !editableVerifier.allocatedTaluka.includes(t) || t === talukaToRemove,
-          ),
-        )
+            (t) =>
+              !editableVerifier.allocatedTaluka.includes(t) ||
+              t === talukaToRemove
+          )
+        );
       }
-    }
+    };
 
     const handleSave = () => {
       if (onEdit) {
-        onEdit(editableVerifier)
+        onEdit(editableVerifier);
       }
-      setIsEditing(false)
-      onClose()
-    }
+      setIsEditing(false);
+      onClose();
+    };
 
     const handleCancel = () => {
       setEditableVerifier(() => ({
         ...verifier,
         location: verifier.location ? { ...verifier.location } : undefined,
-        submittedDocuments: verifier.submittedDocuments ? [...verifier.submittedDocuments] : [],
-        allocatedTaluka: verifier.allocatedTaluka ? [...verifier.allocatedTaluka] : [],
-      }))
-      setIsEditing(false)
-      setCurrentAllocatedTaluka("")
-      setAllocatedTalukaSuggestions([])
-      setShowAllocatedTalukaDropdown(false)
-      setTalukaSuggestionsOverlay([]) // Reset main taluka suggestions
-      setShowTalukaDropdownOverlay(false) // Close main taluka dropdown
-    }
+        submittedDocuments: verifier.submittedDocuments
+          ? [...verifier.submittedDocuments]
+          : [],
+        allocatedTaluka: verifier.allocatedTaluka
+          ? [...verifier.allocatedTaluka]
+          : [],
+      }));
+      setIsEditing(false);
+      setCurrentAllocatedTaluka("");
+      setAllocatedTalukaSuggestions([]);
+      setShowAllocatedTalukaDropdown(false);
+      setTalukaSuggestionsOverlay([]); // Reset main taluka suggestions
+      setShowTalukaDropdownOverlay(false); // Close main taluka dropdown
+    };
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -385,7 +437,9 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                 </div>
                 <div>
                   <h2 className="text-3xl font-bold">{verifier.name}</h2>
-                  <p className="text-white/90 text-sm">Verifier • ID: {verifier._id?.slice(-8)}</p>
+                  <p className="text-white/90 text-sm">
+                    Verifier • ID: {verifier._id?.slice(-8)}
+                  </p>
                 </div>
               </div>
               <button
@@ -406,7 +460,9 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                   <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                     <Phone className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Contact Information</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Contact Information
+                  </h3>
                 </div>
                 <div className="space-y-4">
                   <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -422,7 +478,9 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                         className="mt-1"
                       />
                     ) : (
-                      <p className="font-semibold text-gray-900">{verifier.contact || "N/A"}</p>
+                      <p className="font-semibold text-gray-900">
+                        {verifier.contact || "N/A"}
+                      </p>
                     )}
                   </div>
                   {verifier.email && (
@@ -440,12 +498,17 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                           className="mt-1"
                         />
                       ) : (
-                        <p className="font-semibold text-gray-900">{verifier.email || "N/A"}</p>
+                        <p className="font-semibold text-gray-900">
+                          {verifier.email || "N/A"}
+                        </p>
                       )}
                     </div>
                   )}
                   <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label htmlFor="aadhaarNumber" className="text-sm text-gray-500">
+                    <Label
+                      htmlFor="aadhaarNumber"
+                      className="text-sm text-gray-500"
+                    >
                       Aadhaar Number
                     </Label>
                     {isEditing ? (
@@ -458,7 +521,9 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                         maxLength={12}
                       />
                     ) : (
-                      <p className="font-semibold text-gray-900">{maskAadhaar(verifier.aadhaarNumber)}</p>
+                      <p className="font-semibold text-gray-900">
+                        {maskAadhaar(verifier.aadhaarNumber)}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -469,13 +534,18 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                   <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
                     <MapPin className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Address Details</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Address Details
+                  </h3>
                 </div>
                 <div className="space-y-4">
                   <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label htmlFor="village" className="text-sm text-gray-500">
+                        <Label
+                          htmlFor="village"
+                          className="text-sm text-gray-500"
+                        >
                           Village
                         </Label>
                         {isEditing ? (
@@ -487,12 +557,17 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                             className="mt-1"
                           />
                         ) : (
-                          <p className="font-semibold text-gray-900">{verifier.village || "N/A"}</p>
+                          <p className="font-semibold text-gray-900">
+                            {verifier.village || "N/A"}
+                          </p>
                         )}
                       </div>
                       {/* Taluka Input with Dropdown */}
                       <div className="relative" ref={talukaDropdownRefOverlay}>
-                        <Label htmlFor="taluka" className="text-sm text-gray-500">
+                        <Label
+                          htmlFor="taluka"
+                          className="text-sm text-gray-500"
+                        >
                           Taluka
                         </Label>
                         {isEditing ? (
@@ -503,39 +578,58 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                               value={editableVerifier.taluka || ""}
                               onChange={handleTalukaInputOverlay}
                               onFocus={() => {
-                                if (isDistrictFilled && maharashtraDistricts[editableVerifier.district]) {
-                                  setTalukaSuggestionsOverlay(maharashtraDistricts[editableVerifier.district])
-                                  setShowTalukaDropdownOverlay(true)
+                                if (
+                                  isDistrictFilled &&
+                                  maharashtraDistricts[
+                                    editableVerifier.district
+                                  ]
+                                ) {
+                                  setTalukaSuggestionsOverlay(
+                                    maharashtraDistricts[
+                                      editableVerifier.district
+                                    ]
+                                  );
+                                  setShowTalukaDropdownOverlay(true);
                                 }
                               }}
                               autoComplete="off"
                               disabled={!isDistrictFilled}
                               className="mt-1"
-                              placeholder={!isDistrictFilled ? "Select district first" : "Select or type taluka"}
+                              placeholder={
+                                !isDistrictFilled
+                                  ? "Select district first"
+                                  : "Select or type taluka"
+                              }
                             />
-                            {showTalukaDropdownOverlay && talukaSuggestionsOverlay.length > 0 && (
-                              <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                {talukaSuggestionsOverlay.map((taluka) => (
-                                  <li
-                                    key={taluka}
-                                    className="px-4 py-2 hover:bg-green-100 cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleTalukaSelectOverlay(taluka)
-                                    }}
-                                  >
-                                    {taluka}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
+                            {showTalukaDropdownOverlay &&
+                              talukaSuggestionsOverlay.length > 0 && (
+                                <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                  {talukaSuggestionsOverlay.map((taluka) => (
+                                    <li
+                                      key={taluka}
+                                      className="px-4 py-2 hover:bg-green-100 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTalukaSelectOverlay(taluka);
+                                      }}
+                                    >
+                                      {taluka}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                           </>
                         ) : (
-                          <p className="font-semibold text-gray-900">{verifier.taluka || "N/A"}</p>
+                          <p className="font-semibold text-gray-900">
+                            {verifier.taluka || "N/A"}
+                          </p>
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="district" className="text-sm text-gray-500">
+                        <Label
+                          htmlFor="district"
+                          className="text-sm text-gray-500"
+                        >
                           District
                         </Label>
                         {isEditing ? (
@@ -547,11 +641,16 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                             className="mt-1"
                           />
                         ) : (
-                          <p className="font-semibold text-gray-900">{verifier.district || "N/A"}</p>
+                          <p className="font-semibold text-gray-900">
+                            {verifier.district || "N/A"}
+                          </p>
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="pincode" className="text-sm text-gray-500">
+                        <Label
+                          htmlFor="pincode"
+                          className="text-sm text-gray-500"
+                        >
                           PIN Code
                         </Label>
                         {isEditing ? (
@@ -564,13 +663,18 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                             maxLength={6}
                           />
                         ) : (
-                          <p className="font-semibold text-gray-900">{verifier.pincode || "N/A"}</p>
+                          <p className="font-semibold text-gray-900">
+                            {verifier.pincode || "N/A"}
+                          </p>
                         )}
                       </div>
                     </div>
                     {verifier.landMark && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
-                        <Label htmlFor="landMark" className="text-sm text-gray-500">
+                        <Label
+                          htmlFor="landMark"
+                          className="text-sm text-gray-500"
+                        >
                           Landmark
                         </Label>
                         {isEditing ? (
@@ -582,7 +686,9 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                             className="mt-1"
                           />
                         ) : (
-                          <p className="font-semibold text-gray-900">{verifier.landMark || "N/A"}</p>
+                          <p className="font-semibold text-gray-900">
+                            {verifier.landMark || "N/A"}
+                          </p>
                         )}
                       </div>
                     )}
@@ -603,129 +709,162 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
               </div>
             </div>
             {/* Documents Section */}
-            {verifier.submittedDocuments && verifier.submittedDocuments.length > 0 && (
-              <div className="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-white" />
+            {verifier.submittedDocuments &&
+              verifier.submittedDocuments.length > 0 && (
+                <div className="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Submitted Documents
+                    </h3>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Submitted Documents</h3>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {verifier.submittedDocuments.map((doc, index) => (
-                    <div
-                      key={index}
-                      className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <FileText className="w-4 h-4 text-purple-600" />
-                        <span className="text-sm font-medium text-gray-900 truncate">{formatDocumentName(doc)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Allocated Talukas Section */}
-            <div className="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                  <Map className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Allocated Talukas</h3>
-              </div>
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div className="flex gap-3">
-                    <div className="flex-1 relative" ref={allocatedTalukaDropdownRef}>
-                      <Input
-                        type="text"
-                        value={currentAllocatedTaluka}
-                        onChange={handleAllocatedTalukaInput}
-                        onFocus={() => {
-                          if (isDistrictFilled && maharashtraDistricts[editableVerifier.district]) {
-                            setAllocatedTalukaSuggestions(
-                              maharashtraDistricts[editableVerifier.district].filter(
-                                (t) => !editableVerifier.allocatedTaluka.includes(t),
-                              ),
-                            )
-                            setShowAllocatedTalukaDropdown(true)
-                          }
-                        }}
-                        autoComplete="off"
-                        disabled={!isDistrictFilled}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder={
-                          !isDistrictFilled ? "Select district first" : "Search and select taluka to allocate"
-                        }
-                      />
-                      {showAllocatedTalukaDropdown && allocatedTalukaSuggestions.length > 0 && (
-                        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                          {allocatedTalukaSuggestions.map((taluka) => (
-                            <li
-                              key={taluka}
-                              className="px-4 py-2 hover:bg-green-100 cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAllocatedTalukaSelect(taluka)
-                              }}
-                            >
-                              {taluka}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={handleAddAllocatedTaluka}
-                      disabled={!currentAllocatedTaluka || !isDistrictFilled}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  {editableVerifier.allocatedTaluka && editableVerifier.allocatedTaluka.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Current Allocated Talukas:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {editableVerifier.allocatedTaluka.map((taluka, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                          >
-                            {taluka}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAllocatedTaluka(taluka)}
-                              className="ml-2 text-blue-600 hover:text-blue-800"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {verifier.allocatedTaluka && verifier.allocatedTaluka.length > 0 ? (
-                    verifier.allocatedTaluka.map((taluka, index) => (
-                      <Badge
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {verifier.submittedDocuments.map((doc, index) => (
+                      <div
                         key={index}
-                        variant="secondary"
-                        className="bg-indigo-100 text-indigo-800 border-indigo-300"
+                        className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
                       >
-                        {taluka}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500">No talukas allocated.</p>
-                  )}
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-4 h-4 text-purple-600" />
+                          <span className="text-sm font-medium text-gray-900 truncate">
+                            {formatDocumentName(doc)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
+            {/* Allocated Talukas Section - Conditionally Rendered */}
+            {isTalukasAllocated && (
+              <div className="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <Map className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Allocated Talukas
+                  </h3>
+                </div>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="flex gap-3">
+                      <div
+                        className="flex-1 relative"
+                        ref={allocatedTalukaDropdownRef}
+                      >
+                        <Input
+                          type="text"
+                          value={currentAllocatedTaluka}
+                          onChange={handleAllocatedTalukaInput}
+                          onFocus={() => {
+                            if (
+                              isDistrictFilled &&
+                              maharashtraDistricts[editableVerifier.district]
+                            ) {
+                              setAllocatedTalukaSuggestions(
+                                maharashtraDistricts[
+                                  editableVerifier.district
+                                ].filter(
+                                  (t) =>
+                                    !editableVerifier.allocatedTaluka.includes(
+                                      t
+                                    )
+                                )
+                              );
+                              setShowAllocatedTalukaDropdown(true);
+                            }
+                          }}
+                          autoComplete="off"
+                          disabled={!isDistrictFilled}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder={
+                            !isDistrictFilled
+                              ? "Select district first"
+                              : "Search and select taluka to allocate"
+                          }
+                        />
+                        {showAllocatedTalukaDropdown &&
+                          allocatedTalukaSuggestions.length > 0 && (
+                            <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                              {allocatedTalukaSuggestions.map((taluka) => (
+                                <li
+                                  key={taluka}
+                                  className="px-4 py-2 hover:bg-green-100 cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAllocatedTalukaSelect(taluka);
+                                  }}
+                                >
+                                  {taluka}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleAddAllocatedTaluka}
+                        disabled={!currentAllocatedTaluka || !isDistrictFilled}
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    {editableVerifier.allocatedTaluka &&
+                      editableVerifier.allocatedTaluka.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">
+                            Current Allocated Talukas:
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {editableVerifier.allocatedTaluka.map(
+                              (taluka, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                                >
+                                  {taluka}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRemoveAllocatedTaluka(taluka)
+                                    }
+                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {verifier.allocatedTaluka &&
+                    verifier.allocatedTaluka.length > 0 ? (
+                      verifier.allocatedTaluka.map((taluka, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="bg-indigo-100 text-indigo-800 border-indigo-300"
+                        >
+                          {taluka}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No talukas allocated.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {/* Footer with Edit/Save/Cancel Buttons */}
           <div className="p-6 border-t border-gray-100 flex justify-end space-x-3">
@@ -749,8 +888,8 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
           </div>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   if (!verifiers || verifiers.length === 0) {
     return (
@@ -758,13 +897,14 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
         <User className="w-16 h-16 text-gray-400 mb-4" />
         <p className="text-gray-500 text-lg">No verifiers found.</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
       <p className="text-gray-600 mb-6">
-        Showing {verifiers.length} Verifier{verifiers.length !== 1 ? "s" : ""}
+        Showing {verifiers.length} {category}
+        {verifiers.length !== 1 ? "s" : ""}
       </p>
       {/* Grid of Small Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -782,7 +922,10 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                 </div>
                 {/* Name */}
                 <div>
-                  <h3 className="font-medium text-gray-900 text-sm truncate w-full" title={verifier.name}>
+                  <h3
+                    className="font-medium text-gray-900 text-sm truncate w-full"
+                    title={verifier.name}
+                  >
                     {verifier.name}
                   </h3>
                 </div>
@@ -794,7 +937,10 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
                       {verifier.village}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 truncate" title={verifier.taluka}>
+                  <p
+                    className="text-xs text-gray-500 truncate"
+                    title={verifier.taluka}
+                  >
                     {verifier.taluka}
                   </p>
                 </div>
@@ -812,10 +958,14 @@ const VerifierCard = ({ verifiers, onVerify, onEdit }) => {
       </div>
       {/* Overlay Modal */}
       {selectedVerifier && (
-        <VerifierDetailOverlay verifier={selectedVerifier} onClose={closeVerifierDetails} onEdit={onEdit} />
+        <VerifierDetailOverlay
+          verifier={selectedVerifier}
+          onClose={closeVerifierDetails}
+          onEdit={onEdit}
+        />
       )}
     </div>
-  )
-}
+  );
+};
 
 export default VerifierCard

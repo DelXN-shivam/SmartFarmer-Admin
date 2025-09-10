@@ -44,8 +44,8 @@ export default function DashboardLayout({ children }) {
       href: "taluka-officer/verifier/all",
       subItems: [
         { label: "All Verifiers", href: "/taluka-officer/verifier/all" },
-        { label: "Verified", href: "/taluka-officer/verifier/verified" },
-        { label: "Unverified", href: "/taluka-officer/verifier/unverified" },
+        // { label: "Verified", href: "/taluka-officer/verifier/verified" },
+        // { label: "Unverified", href: "/taluka-officer/verifier/unverified" },
         { label: "Add Verifier", href: "/taluka-officer/verifier/add" },
       ],
     },

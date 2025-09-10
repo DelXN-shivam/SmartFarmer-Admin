@@ -175,7 +175,6 @@ export default function VerifiersPage() {
       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-16">
         <h1 className="text-3xl font-bold text-gray-900">Verifier Directory</h1>
         <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
-          
           {/* Search Input */}
           <div className="relative w-full sm:w-auto">
             <Input
@@ -197,8 +196,14 @@ export default function VerifiersPage() {
           </div>
         </div>
       </div>
-      <VerifierCard verifiers={filteredVerifiers} onVerify={handleVerifyVerifier} onEdit={handleEditVerifier} />
+      <VerifierCard
+        verifiers={filteredVerifiers}
+        onVerify={handleVerifyVerifier}
+        onEdit={handleEditVerifier}
+        category={"Verifier"}
+        isTalukasAllocated={true}
+      />
       <GoToTopButton />
     </div>
-  )
+  );
 }
