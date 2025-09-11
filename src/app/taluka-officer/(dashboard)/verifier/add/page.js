@@ -5,6 +5,7 @@ import { MapPin, Phone, Mail, FileText, User, Navigation, Lock, Plus, CheckCircl
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useVerifierStore } from '@/stores/verifierStore';
 
 
 const stateMaharashtra = 'Maharashtra';
@@ -355,6 +356,15 @@ for (const [district, locations] of Object.entries(maharashtraDistricts)) {
 }
 
 const AddVerifierPage = () => {
+  const { addVerifier } = useVerifierStore(); // Add this line
+  // Add the verifier store
+  const { verifiers,
+    loading,
+    error,
+    fetchAllVerifiers,
+    updateVerifier,
+    shouldRefresh } = useVerifierStore();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -647,7 +657,7 @@ const AddVerifierPage = () => {
       if (!token) {
         toast.error("Authentication token not found, redirecting to login")
         setTimeout(async () => {
-          await router.push("//login")
+          await router.push("/login")
         }, 3000)
         return
       }
@@ -657,9 +667,9 @@ const AddVerifierPage = () => {
         ...submitData,
         state: submitData.state.toLowerCase(),
         district: submitData.district.toLowerCase(),
-        taluka: submitData.taluka.toLowerCase(), // Changed from map to simple toLowerCase
+        taluka: submitData.taluka.toLowerCase(),
         village: submitData.village.toLowerCase(),
-        allocatedTaluka: allocatedTalukas.map((t) => t.toLowerCase()), // Add allocated talukas
+        allocatedTaluka: allocatedTalukas.map((t) => t.toLowerCase()),
       }
 
       const response = await axios.post(`${BASE_URL}/api/verifier/register`, transformedData, {
@@ -670,6 +680,23 @@ const AddVerifierPage = () => {
       })
 
       if (response.status === 201) {
+        const newVerifier = response.data.data; // Assuming your API returns the created verifier
+
+        // Add the new verifier to the store
+        // addVerifier(newVerifier);
+
+        // Background refresh: refetch all verifiers so store stays in sync
+         try {
+          const token = localStorage.getItem("Authorization")?.split(" ")[1];
+          if (token) {
+             // fire-and-forget (don't block UI)
+             fetchAllVerifiers(token, BASE_URL);
+          }
+        } catch (err) {
+          console.error("Background refresh failed:", err);
+        }
+        
+
         toast.success("Verifier registered successfully!", {
           duration: 4000,
           position: "top-center",
@@ -683,13 +710,18 @@ const AddVerifierPage = () => {
           age: "",
           village: "",
           landMark: "",
-          taluka: "", // Changed from [] to ""
+          taluka: "",
           district: "",
           state: "Maharashtra",
           pincode: "",
         })
-        setAllocatedTalukas([]) // Reset allocated talukas
+        setAllocatedTalukas([])
         setCurrentAllocatedTaluka("")
+
+        // Redirect to verifiers list after successful submission
+        setTimeout(() => {
+          router.push("/taluka-officer/verifier/all"); // Adjust this path to your verifiers list page
+        }, 2000);
       }
     } catch (err) {
       if (err.response?.status === 401) {

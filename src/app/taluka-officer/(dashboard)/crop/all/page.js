@@ -1,149 +1,61 @@
 "use client"
 
-import axios from "axios"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { X } from "lucide-react"
 import GoToTopButton from "@/components/ui/GoToTopButton"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import CropCard from "@/components/ui/CropCard"
+import { useCropStore } from "@/stores/cropStore"
 
 export default function GetAllCropsPage() {
-  const [loading, setLoading] = useState(true)
-  const [crops, setCrops] = useState([])
-  const [farmersData, setFarmersData] = useState({})
-  const [verifiersData, setVerifiersData] = useState({})
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  
   const router = useRouter()
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+  
+  const {
+    crops,
+    farmersData,
+    verifiersData,
+    loading,
+    error,
+    fetchAllCrops,
+    shouldRefresh
+  } = useCropStore()
 
-  // Function to fetch farmers data in background
-  const fetchFarmersData = useCallback(async (farmerIds) => {
-    if (!farmerIds || farmerIds.length === 0) return;
-    
-    try {
-      const token = localStorage.getItem("Authorization")?.split(" ")[1]
-      if (!token) return;
-      
-      const response = await axios.post(`${BASE_URL}/api/farmer/by-ids`, 
-        { ids: farmerIds },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      
-      if (response.status === 200 && response.data?.data) {
-        const farmersMap = {};
-        response.data.data.forEach(farmer => {
-          farmersMap[farmer._id] = farmer;
-        });
-        setFarmersData(prev => ({ ...prev, ...farmersMap }));
-      }
-    } catch (err) {
-      console.error("Error fetching farmers data:", err);
-      // Silently fail for background requests
-    }
-  }, [BASE_URL]);
-
-  // Function to fetch verifiers data in background
-  const fetchVerifiersData = useCallback(async (verifierIds) => {
-    if (!verifierIds || verifierIds.length === 0) return;
-    
-    try {
-      const token = localStorage.getItem("Authorization")?.split(" ")[1]
-      if (!token) return;
-      
-      const response = await axios.post(`${BASE_URL}/api/verifier/by-ids`, 
-        { ids: verifierIds },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      
-      if (response.status === 200 && response.data?.data) {
-        const verifiersMap = {};
-        response.data.data.forEach(verifier => {
-          verifiersMap[verifier._id] = verifier;
-        });
-        setVerifiersData(prev => ({ ...prev, ...verifiersMap }));
-      }
-    } catch (err) {
-      console.error("Error fetching verifiers data:", err);
-      // Silently fail for background requests
-    }
-  }, [BASE_URL]);
-
-  // Memoized fetch function with proper error handling
-  const getAllCrops = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const token = localStorage.getItem("Authorization")?.split(" ")[1]
-      if (!token) {
-        toast.error("Session expired. Please login again.")
-        router.push("/login");
-        return
-      }
-      const response = await axios.get(`${BASE_URL}/api/crop/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-      if (response.status === 200 && response.data?.crops) {
-        setCrops(response.data.crops)
-        
-        // Extract unique farmerIds and verifierIds for background API calls
-        const farmerIds = [...new Set(response.data.crops
-          .map(crop => crop.farmerId)
-          .filter(id => id && !farmersData[id]))];
-        
-        const verifierIds = [...new Set(response.data.crops
-          .map(crop => crop.verifierId)
-          .filter(id => id && !verifiersData[id]))];
-        
-        // Make background API calls
-        if (farmerIds.length > 0) {
-          fetchFarmersData(farmerIds);
-        }
-        
-        if (verifierIds.length > 0) {
-          fetchVerifiersData(verifierIds);
-        }
-      } else {
-        throw new Error("Invalid response structure")
-      }
-    } catch (err) {
-      console.error("Error fetching crops:", err)
-      const errorMessage = err.response?.data?.message || err.message || "Failed to fetch crops"
-      setError(errorMessage)
-      if (err.response?.status === 401) {
-        localStorage.removeItem("Authorization")
-        toast.error("Session expired. Redirecting to login...")
-        setTimeout(() => router.push("/login"), 2000)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [BASE_URL, router, farmersData, verifiersData, fetchFarmersData, fetchVerifiersData])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
 
   useEffect(() => {
-    getAllCrops()
-  }, [getAllCrops])
+    const initializeData = async () => {
+      try {
+        const token = localStorage.getItem("Authorization")?.split(" ")[1]
+        if (!token) {
+          toast.error("Session expired. Please login again.")
+          router.push("/login")
+          return
+        }
 
-  // Optimized filtering
+        // Fetch data only if needed
+        if (shouldRefresh() || crops.length === 0) {
+          await fetchAllCrops(token, BASE_URL)
+        }
+      } catch (err) {
+        console.error("Error initializing data:", err)
+        if (err.response?.status === 401) {
+          localStorage.removeItem("Authorization")
+          toast.error("Session expired. Redirecting to login...")
+          setTimeout(() => router.push("/login"), 2000)
+        }
+      }
+    }
+
+    initializeData()
+  }, [BASE_URL, router, fetchAllCrops, shouldRefresh, crops.length])
+
+  // Filter crops based on search and status
   const filteredCrops = crops.filter((crop) => {
-    if (!crop || typeof crop !== "object") return false
+    if (!crop) return false
     const searchLower = searchTerm.toLowerCase()
     const name = crop.name || ""
     const address = crop.address || ""
@@ -157,7 +69,7 @@ export default function GetAllCropsPage() {
     )
   })
 
-  if (loading) {
+  if (loading && crops.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
@@ -166,7 +78,7 @@ export default function GetAllCropsPage() {
     )
   }
 
-  if (error) {
+  if (error && crops.length === 0) {
     return (
       <div className="p-4 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Crops Directory</h1>
@@ -175,7 +87,10 @@ export default function GetAllCropsPage() {
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
               <button
-                onClick={getAllCrops}
+                onClick={() => {
+                  const token = localStorage.getItem("Authorization")?.split(" ")[1]
+                  if (token) fetchAllCrops(token, BASE_URL)
+                }}
                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-700 underline"
               >
                 Try again
@@ -192,7 +107,6 @@ export default function GetAllCropsPage() {
       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-16">
         <h1 className="text-3xl font-bold text-gray-900">Crops Directory</h1>
         <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
-          {/* Search Input */}
           <div className="relative w-full sm:w-auto">
             <Input
               type="text"
@@ -220,11 +134,8 @@ export default function GetAllCropsPage() {
       />
       <GoToTopButton />
     </div>
-  );
+  )
 }
-
-
-
 
 
 // "use client"
@@ -237,16 +148,81 @@ export default function GetAllCropsPage() {
 // import { useRouter } from "next/navigation"
 // import { Input } from "@/components/ui/input"
 // import CropCard from "@/components/ui/CropCard"
+// import { useCropStore } from "@/stores/cropStore"
 
 // export default function GetAllCropsPage() {
 //   const [loading, setLoading] = useState(true)
 //   const [crops, setCrops] = useState([])
+//   const [farmersData, setFarmersData] = useState({})
+//   const [verifiersData, setVerifiersData] = useState({})
 //   const [error, setError] = useState(null)
 //   const [searchTerm, setSearchTerm] = useState("")
 //   const [statusFilter, setStatusFilter] = useState("all")
   
 //   const router = useRouter()
 //   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+
+//   // Function to fetch farmers data in background
+//   const fetchFarmersData = useCallback(async (farmerIds) => {
+//     if (!farmerIds || farmerIds.length === 0) return;
+    
+//     try {
+//       const token = localStorage.getItem("Authorization")?.split(" ")[1]
+//       if (!token) return;
+      
+//       const response = await axios.post(`${BASE_URL}/api/farmer/by-ids`, 
+//         { ids: farmerIds },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+      
+//       if (response.status === 200 && response.data?.data) {
+//         const farmersMap = {};
+//         response.data.data.forEach(farmer => {
+//           farmersMap[farmer._id] = farmer;
+//         });
+//         setFarmersData(prev => ({ ...prev, ...farmersMap }));
+//       }
+//     } catch (err) {
+//       console.error("Error fetching farmers data:", err);
+//       // Silently fail for background requests
+//     }
+//   }, [BASE_URL]);
+
+//   // Function to fetch verifiers data in background
+//   const fetchVerifiersData = useCallback(async (verifierIds) => {
+//     if (!verifierIds || verifierIds.length === 0) return;
+    
+//     try {
+//       const token = localStorage.getItem("Authorization")?.split(" ")[1]
+//       if (!token) return;
+      
+//       const response = await axios.post(`${BASE_URL}/api/verifier/by-ids`, 
+//         { ids: verifierIds },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+      
+//       if (response.status === 200 && response.data?.data) {
+//         const verifiersMap = {};
+//         response.data.data.forEach(verifier => {
+//           verifiersMap[verifier._id] = verifier;
+//         });
+//         setVerifiersData(prev => ({ ...prev, ...verifiersMap }));
+//       }
+//     } catch (err) {
+//       console.error("Error fetching verifiers data:", err);
+//       // Silently fail for background requests
+//     }
+//   }, [BASE_URL]);
 
 //   // Memoized fetch function with proper error handling
 //   const getAllCrops = useCallback(async () => {
@@ -267,6 +243,24 @@ export default function GetAllCropsPage() {
 //       })
 //       if (response.status === 200 && response.data?.crops) {
 //         setCrops(response.data.crops)
+        
+//         // Extract unique farmerIds and verifierIds for background API calls
+//         const farmerIds = [...new Set(response.data.crops
+//           .map(crop => crop.farmerId)
+//           .filter(id => id && !farmersData[id]))];
+        
+//         const verifierIds = [...new Set(response.data.crops
+//           .map(crop => crop.verifierId)
+//           .filter(id => id && !verifiersData[id]))];
+        
+//         // Make background API calls
+//         if (farmerIds.length > 0) {
+//           fetchFarmersData(farmerIds);
+//         }
+        
+//         if (verifierIds.length > 0) {
+//           fetchVerifiersData(verifierIds);
+//         }
 //       } else {
 //         throw new Error("Invalid response structure")
 //       }
@@ -282,7 +276,7 @@ export default function GetAllCropsPage() {
 //     } finally {
 //       setLoading(false)
 //     }
-//   }, [BASE_URL, router])
+//   }, [BASE_URL, router, farmersData, verifiersData, fetchFarmersData, fetchVerifiersData])
 
 //   useEffect(() => {
 //     getAllCrops()
@@ -323,7 +317,7 @@ export default function GetAllCropsPage() {
 //               <p className="text-sm text-red-700">{error}</p>
 //               <button
 //                 onClick={getAllCrops}
-//                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
+//                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-700 underline"
 //               >
 //                 Try again
 //               </button>
@@ -360,8 +354,15 @@ export default function GetAllCropsPage() {
 //           </div>
 //         </div>
 //       </div>
-//       <CropCard crops={filteredCrops} />
+//       <CropCard 
+//         crops={filteredCrops} 
+//         farmersData={farmersData}
+//         verifiersData={verifiersData}
+//       />
 //       <GoToTopButton />
 //     </div>
 //   );
 // }
+
+
+
