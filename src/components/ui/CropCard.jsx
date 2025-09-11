@@ -23,7 +23,7 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
     if (crop.farmerId && farmersData[crop.farmerId]) {
       const farmer = farmersData[crop.farmerId];
       const farmerData = {
-        id: farmer._id,
+        id: farmer._id.slice(-8),
         name: farmer.name,
         email: farmer.email || "N/A",
         phone: farmer.contact,
@@ -289,7 +289,7 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
                 <div>
                   <h2 className="text-3xl font-bold">{verifier.name}</h2>
                   <p className="text-white/90 text-sm">
-                    Verifier ID: {verifier.id}
+                    Verifier ID: {verifier.id.slice(-8)}
                   </p>
                 </div>
               </div>
@@ -602,7 +602,7 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
                   <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
                     <Label className="text-sm text-gray-500">Farmer ID</Label>
                     <p className="font-semibold text-gray-900">
-                      {crop.farmerId || "N/A"}
+                      {crop.farmerId.slice(-8) || "N/A"}
                     </p>
                   </div>
                   <Button
