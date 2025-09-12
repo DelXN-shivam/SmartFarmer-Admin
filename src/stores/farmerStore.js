@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export const useFarmerStore = create(
-  persist(
+  // persist(
     (set, get) => ({
       farmers: [],
       crops: [],
@@ -86,5 +86,5 @@ export const useFarmerStore = create(
     {
       name: 'farmer-storage',
     }
-  )
+  // )
 )

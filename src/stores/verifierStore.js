@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export const useVerifierStore = create(
-  persist(
+  // persist(
     (set, get) => ({
       verifiers: [],
       lastFetched: null,
@@ -73,5 +73,5 @@ export const useVerifierStore = create(
     {
       name: 'verifier-storage',
     }
-  )
+  // )
 )
