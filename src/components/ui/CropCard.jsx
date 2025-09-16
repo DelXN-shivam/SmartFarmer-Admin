@@ -21,21 +21,22 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
 
     // Use pre-fetched farmer data if available
     if (crop.farmerId && farmersData[crop.farmerId]) {
-      const farmer = farmersData[crop.farmerId];
-      const farmerData = {
-        id: farmer._id.slice(-8),
-        name: farmer.name,
-        email: farmer.email || "N/A",
-        phone: farmer.contact,
-        address: `${farmer.village || ""}, ${farmer.taluka || ""}, ${
-          farmer.district || ""
-        }, ${farmer.state || ""} - ${farmer.pincode || ""}`,
-        registrationDate: farmer.createdAt,
-        totalCrops: farmer.crops?.length || 0,
-        verifiedCrops: farmer.crops?.length || 0, // Adjust based on your logic
-        status: farmer.applicationStatus || "active",
-      };
-      setSelectedFarmer(farmerData);
+      // const farmer = farmersData[crop.farmerId];
+      // const farmerData = {
+      //   id: farmer._id.slice(-8),
+      //   name: farmer.name,
+      //   email: farmer.email || "N/A",
+      //   phone: farmer.contact,
+      //   address: `${farmer.village || ""}, ${farmer.taluka || ""}, ${
+      //     farmer.district || ""
+      //   }, ${farmer.state || ""} - ${farmer.pincode || ""}`,
+      //   registrationDate: farmer.createdAt,
+      //   totalCrops: farmer.crops?.length || 0,
+      //   verifiedCrops: farmer.crops?.length || 0, // Adjust based on your logic
+      //   status: farmer.applicationStatus || "active",
+      // };
+      // setSelectedFarmer(farmerData);
+      setSelectedFarmer(farmersData[crop.farmerId]); // pass full object
     } else {
       // Fallback to mock data if not available
       const farmerData = {
@@ -120,158 +121,231 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
   };
 
   // Farmer Detail Overlay Component
-  const FarmerDetailOverlay = ({ farmer, onClose }) => {
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
-          {/* Header */}
-          <div className="relative bg-gradient-to-r from-blue-800 to-blue-900 p-6">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative flex items-center justify-between text-white">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                  <User className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-bold">{farmer.name}</h2>
-                  <p className="text-white/90 text-sm">
-                    Farmer ID: {farmer.id}
-                  </p>
-                </div>
+  // const FarmerDetailOverlay = ({ farmer, onClose }) => {
+  //   return (
+  //     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  //       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+  //         {/* Header */}
+  //         <div className="relative bg-gradient-to-r from-blue-800 to-blue-900 p-6">
+  //           <div className="absolute inset-0 bg-black/10"></div>
+  //           <div className="relative flex items-center justify-between text-white">
+  //             <div className="flex items-center space-x-4">
+  //               <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
+  //                 <User className="w-8 h-8 text-white" />
+  //               </div>
+  //               <div>
+  //                 <h2 className="text-3xl font-bold">{farmer.name}</h2>
+  //                 <p className="text-white/90 text-sm">
+  //                   Farmer ID: {farmer.id}
+  //                 </p>
+  //               </div>
+  //             </div>
+  //             <button
+  //               onClick={onClose}
+  //               className="p-3 hover:bg-white/20 rounded-full transition-all duration-200 backdrop-blur-sm"
+  //               aria-label="Close details"
+  //             >
+  //               <X className="w-6 h-6 text-white" />
+  //             </button>
+  //           </div>
+  //         </div>
+
+  //         {/* Content */}
+  //         <div className="p-6 overflow-y-auto flex-1">
+  //           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  //             {/* Personal Information */}
+  //             <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+  //               <div className="flex items-center space-x-2 mb-4">
+  //                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+  //                   <IdCard className="w-4 h-4 text-white" />
+  //                 </div>
+  //                 <h3 className="text-xl font-bold text-gray-900">
+  //                   Personal Information
+  //                 </h3>
+  //               </div>
+  //               <div className="space-y-4">
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">
+  //                     Email Address
+  //                   </Label>
+  //                   <div className="flex items-center mt-1">
+  //                     <Mail className="w-4 h-4 mr-2 text-blue-600" />
+  //                     <p className="font-semibold text-gray-900">
+  //                       {farmer.email}
+  //                     </p>
+  //                   </div>
+  //                 </div>
+
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">
+  //                     Phone Number
+  //                   </Label>
+  //                   <div className="flex items-center mt-1">
+  //                     <Phone className="w-4 h-4 mr-2 text-blue-600" />
+  //                     <p className="font-semibold text-gray-900">
+  //                       {farmer.phone}
+  //                     </p>
+  //                   </div>
+  //                 </div>
+
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">
+  //                     Registration Date
+  //                   </Label>
+  //                   <p className="font-semibold text-gray-900">
+  //                     {formatDate(farmer.registrationDate)}
+  //                   </p>
+  //                 </div>
+
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">Status</Label>
+  //                   <p className="font-semibold text-gray-900">
+  //                     <span
+  //                       className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(
+  //                         farmer.status
+  //                       )}`}
+  //                     >
+  //                       {farmer.status}
+  //                     </span>
+  //                   </p>
+  //                 </div>
+  //               </div>
+  //             </div>
+
+  //             {/* Farm Statistics */}
+  //             <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+  //               <div className="flex items-center space-x-2 mb-4">
+  //                 <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+  //                   <Sprout className="w-4 h-4 text-white" />
+  //                 </div>
+  //                 <h3 className="text-xl font-bold text-gray-900">
+  //                   Farm Statistics
+  //                 </h3>
+  //               </div>
+  //               <div className="space-y-4">
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">
+  //                     Total Crops Registered
+  //                   </Label>
+  //                   <p className="font-semibold text-gray-900 text-2xl">
+  //                     {farmer.totalCrops}
+  //                   </p>
+  //                 </div>
+
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">
+  //                     Verified Crops
+  //                   </Label>
+  //                   <p className="font-semibold text-gray-900 text-2xl">
+  //                     {farmer.verifiedCrops}
+  //                   </p>
+  //                 </div>
+
+  //                 <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //                   <Label className="text-sm text-gray-500">
+  //                     Verification Rate
+  //                   </Label>
+  //                   <p className="font-semibold text-gray-900 text-2xl">
+  //                     {Math.round(
+  //                       (farmer.verifiedCrops / farmer.totalCrops) * 100
+  //                     )}
+  //                     %
+  //                   </p>
+  //                 </div>
+  //               </div>
+  //             </div>
+  //           </div>
+
+  //           {/* Address Information */}
+  //           <div className="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
+  //             <div className="flex items-center space-x-2 mb-4">
+  //               <div className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">
+  //                 <Map className="w-4 h-4 text-white" />
+  //               </div>
+  //               <h3 className="text-xl font-bold text-gray-900">Address</h3>
+  //             </div>
+  //             <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+  //               <p className="text-gray-900">{farmer.address}</p>
+  //             </div>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // };
+  // Farmer Detail Overlay Component
+const FarmerDetailOverlay = ({ farmer, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="relative bg-gradient-to-r from-blue-800 to-blue-900 p-6">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="relative flex items-center justify-between text-white">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
+                <User className="w-8 h-8 text-white" />
               </div>
-              <button
-                onClick={onClose}
-                className="p-3 hover:bg-white/20 rounded-full transition-all duration-200 backdrop-blur-sm"
-                aria-label="Close details"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
+              <div>
+                <h2 className="text-3xl font-bold">{farmer.name}</h2>
+                <p className="text-white/90 text-sm">
+                  Farmer ID: {farmer._id?.slice(-8)}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-3 hover:bg-white/20 rounded-full transition-all duration-200 backdrop-blur-sm"
+              aria-label="Close details"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+          {/* Personal Information */}
+          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* <p><span className="font-semibold">Email:</span> {farmer.email}</p> */}
+              <p><span className="font-semibold">Phone:</span> {farmer.contact}</p>
+              <p><span className="font-semibold">Aadhaar Number:</span> {farmer.aadhaarNumber || "N/A"}</p>
+              <p><span className="font-semibold">Age:</span> {farmer.age || "N/A"}</p>
+              <p><span className="font-semibold">Status:</span> {farmer.applicationStatus || "Active"}</p>
+              <p><span className="font-semibold">Created At:</span> {farmer.createdAt ? new Date(farmer.createdAt).toLocaleString() : "N/A"}</p>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Personal Information */}
-              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <IdCard className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Personal Information
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">
-                      Email Address
-                    </Label>
-                    <div className="flex items-center mt-1">
-                      <Mail className="w-4 h-4 mr-2 text-blue-600" />
-                      <p className="font-semibold text-gray-900">
-                        {farmer.email}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">
-                      Phone Number
-                    </Label>
-                    <div className="flex items-center mt-1">
-                      <Phone className="w-4 h-4 mr-2 text-blue-600" />
-                      <p className="font-semibold text-gray-900">
-                        {farmer.phone}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">
-                      Registration Date
-                    </Label>
-                    <p className="font-semibold text-gray-900">
-                      {formatDate(farmer.registrationDate)}
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">Status</Label>
-                    <p className="font-semibold text-gray-900">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(
-                          farmer.status
-                        )}`}
-                      >
-                        {farmer.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Farm Statistics */}
-              <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                    <Sprout className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Farm Statistics
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">
-                      Total Crops Registered
-                    </Label>
-                    <p className="font-semibold text-gray-900 text-2xl">
-                      {farmer.totalCrops}
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">
-                      Verified Crops
-                    </Label>
-                    <p className="font-semibold text-gray-900 text-2xl">
-                      {farmer.verifiedCrops}
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                    <Label className="text-sm text-gray-500">
-                      Verification Rate
-                    </Label>
-                    <p className="font-semibold text-gray-900 text-2xl">
-                      {Math.round(
-                        (farmer.verifiedCrops / farmer.totalCrops) * 100
-                      )}
-                      %
-                    </p>
-                  </div>
-                </div>
-              </div>
+          {/* Farm Statistics */}
+          <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Farm Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <p><span className="font-semibold">Total Crops:</span> {farmer.cropId?.length || 0}</p>
+              <p><span className="font-semibold">Verified Crops:</span> {farmer.verifiedCrops || 0}</p>
+              <p><span className="font-semibold">Verification Rate:</span> {farmer.totalCrops ? Math.round((farmer.verifiedCrops / farmer.totalCrops) * 100) : 0}%</p>
             </div>
+          </div>
 
-            {/* Address Information */}
-            <div className="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">
-                  <Map className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Address</h3>
-              </div>
-              <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                <p className="text-gray-900">{farmer.address}</p>
-              </div>
+          {/* Address Information */}
+          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <p><span className="font-semibold">Village:</span> {farmer.village}</p>
+              <p><span className="font-semibold">Landmark:</span> {farmer.landMark}</p>
+              <p><span className="font-semibold">Taluka:</span> {farmer.taluka}</p>
+              <p><span className="font-semibold">District:</span> {farmer.district}</p>
+              <p><span className="font-semibold">State:</span> {farmer.state}</p>
+              <p><span className="font-semibold">Pincode:</span> {farmer.pincode}</p>
             </div>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   // Verifier Detail Overlay Component
   const VerifierDetailOverlay = ({ verifier, onClose }) => {
@@ -631,7 +705,7 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
                   <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
                     <Label className="text-sm text-gray-500">Verifier ID</Label>
                     <p className="font-semibold text-gray-900">
-                      {crop.verifierId || "Not assigned"}
+                      {crop.verifierId.slice(-8) || "Not assigned"}
                     </p>
                   </div>
                   <Button
