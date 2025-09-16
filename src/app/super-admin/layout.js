@@ -7,10 +7,7 @@ import {
   Users,
   Settings,
   BarChart3,
-  Package,
-  FileText,
   Bell,
-  Search,
   User,
   LogOut,
   ChevronDown,
@@ -18,36 +15,51 @@ import {
   Contact,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useUserDataStore } from "@/stores/userDataStore";
+import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
-  const [activeItem, setActiveItem] = useState("Dashboard"); // Add active item state
-  const [activeSubItem, setActiveSubItem] = useState(null); // Track active sub-item
+  const [activeItem, setActiveItem] = useState("Dashboard");
+  const [activeSubItem, setActiveSubItem] = useState(null);
   const router = useRouter();
+
+  // ✅ get user data from store
+  const { setUserData, user } = useUserDataStore();
+  const { logout } = useAuth();
+
   const sidebarItems = [
-    {
-      icon: Home,
-      label: "Dashboard",
-      href: "/super-admin",
-    },
+    { icon: Home, label: "Dashboard", href: "/super-admin" },
     {
       icon: Users,
       label: "District Officer",
-      href: "/district-officer",
+      href: "/super-admin/district-officer/all",
       subItems: [
-        { label: "All District Officers", href: "/super-admin/district-officer/all" },
-        { label: "Add District Officers", href: "/super-admin/district-officer/add" },
+        {
+          label: "All District Officers",
+          href: "/super-admin/district-officer/all",
+        },
+        {
+          label: "Add District Officers",
+          href: "/super-admin/district-officer/add",
+        },
       ],
     },
     {
       icon: Contact,
       label: "Taluka Officer",
-      href: "taluka-officer",
+      href: "/super-admin/taluka-officer/all",
       subItems: [
-        { label: "All Taluka Officers", href: "/super-admin/taluka-officer/all" },
-        { label: "Add Taluka Officers", href: "/super-admin/taluka-officer/add" },
+        {
+          label: "All Taluka Officers",
+          href: "/super-admin/taluka-officer/all",
+        },
+        {
+          label: "Add Taluka Officers",
+          href: "/super-admin/taluka-officer/add",
+        },
       ],
     },
     {
@@ -55,10 +67,16 @@ export default function DashboardLayout({ children }) {
       label: "Analytics",
       href: "/super-admin/analytics",
       subItems: [
-        { label: "Overview", href: "/super-admin/analytics" },
-        { label: "Reports", href: "/super-admin/analytics" },
-        { label: "Export", href: "/super-admin/analytics" },
+        { label: "Overview", href: "/super-admin/analytics/overview" },
+        { label: "Reports", href: "/super-admin/analytics/reports" },
+        { label: "Export", href: "/super-admin/analytics/export" },
       ],
+    },
+    // ✅ New Profile section in sidebar
+    {
+      icon: User,
+      label: "Profile",
+      href: "/super-admin/profile",
     },
   ];
 
@@ -76,21 +94,25 @@ export default function DashboardLayout({ children }) {
     if (item.subItems) {
       toggleItem(item.label);
     } else {
-      router.push(item.href); // Navigate to the main item's route
+      router.push(item.href);
     }
 
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   const handleSubItemClick = (subItem, parentLabel) => {
     setActiveItem(parentLabel);
     setActiveSubItem(subItem.label);
-    router.push(subItem.href); // Navigate to the sub-item's route
+    router.push(subItem.href);
 
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
+  };
+
+  // ✅ Logout function
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to logout?")) {
+      logout();
+      setUserData(null); // Clear Zustand store
     }
   };
 
@@ -178,14 +200,19 @@ export default function DashboardLayout({ children }) {
           ))}
         </nav>
 
+        {/* ✅ User info (footer) */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
               <User className="w-4 h-4 text-gray-600" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-700">Admin User</p>
-              <p className="text-xs text-gray-500">admin@example.com</p>
+              <p className="text-sm font-medium text-gray-700">
+                {user?.name || "Guest"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.email || "no-email"}
+              </p>
             </div>
           </div>
         </div>
@@ -206,7 +233,6 @@ export default function DashboardLayout({ children }) {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Notifications */}
               <button className="relative p-2 rounded-lg hover:bg-gray-100">
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
@@ -219,10 +245,12 @@ export default function DashboardLayout({ children }) {
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
                 >
                   <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">AU</span>
+                    <span className="text-white text-sm font-medium">
+                      {user?.name?.[0] || "U"}
+                    </span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">
-                    Admin User
+                    {user?.name || "User"}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -230,7 +258,7 @@ export default function DashboardLayout({ children }) {
                 {userDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <a
-                      href="#"
+                      href="/super-admin/profile"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <User className="w-4 h-4 mr-2" />
@@ -244,13 +272,13 @@ export default function DashboardLayout({ children }) {
                       Settings
                     </a>
                     <hr className="my-1" />
-                    <a
-                      href="#"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Sign out
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

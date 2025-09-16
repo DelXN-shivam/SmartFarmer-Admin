@@ -1,4 +1,3 @@
-
 "use client";
 import { useState } from "react";
 import {
@@ -18,7 +17,8 @@ import {
   Trees,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useUserDataStore } from "@/stores/userDataStore"; // ✅ import Zustand
+import { useUserDataStore } from "@/stores/userDataStore";
+import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,8 +28,8 @@ export default function DashboardLayout({ children }) {
   const [activeSubItem, setActiveSubItem] = useState(null);
   const router = useRouter();
 
-  // ✅ get user data from store
-  const { user, clearUserData } = useUserDataStore();
+  const { setUserData, user } = useUserDataStore();
+  const { logout } = useAuth();
 
   const sidebarItems = [
     { icon: Home, label: "Dashboard", href: "/taluka-officer" },
@@ -97,8 +97,10 @@ export default function DashboardLayout({ children }) {
 
   // ✅ Logout function
   const handleLogout = () => {
-    clearUserData();
-    router.push("/login");
+    if (confirm("Are you sure you want to logout?")) {
+      logout();
+      setUserData(null); // Clear Zustand store
+    }
   };
 
   return (
@@ -277,17 +279,6 @@ export default function DashboardLayout({ children }) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
 
 // "use client";
 // import { useState } from "react";
@@ -563,20 +554,6 @@ export default function DashboardLayout({ children }) {
 //     </div>
 //   );
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // // "use client";
 // // import { useState } from "react";

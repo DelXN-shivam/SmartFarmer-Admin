@@ -13,7 +13,7 @@ export const useUserDataStore = create(
       // Set user data after login
       setUserData: (data) => {
         set({
-          user: data.data,   // API gives "data" as user object
+          user: data.data, // API gives "data" as user object
           role: data.role,
           token: data.token,
         });
@@ -32,7 +32,7 @@ export const useUserDataStore = create(
       isLoggedIn: () => !!get().token,
     }),
     {
-      name: "user-data-storage", // Key in localStorage
+      name: "user-data-storage",
     }
   )
 );
