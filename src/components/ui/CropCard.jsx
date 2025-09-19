@@ -705,7 +705,7 @@ const FarmerDetailOverlay = ({ farmer, onClose }) => {
                   <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
                     <Label className="text-sm text-gray-500">Verifier ID</Label>
                     <p className="font-semibold text-gray-900">
-                      {crop.verifierId.slice(-8) || "Not assigned"}
+                      {crop.verifierId || "Not assigned"}
                     </p>
                   </div>
                   <Button
