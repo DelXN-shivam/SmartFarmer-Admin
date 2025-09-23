@@ -20,6 +20,7 @@ export default function VerifiersPage() {
     loading,
     error,
     fetchAllVerifiers,
+    fetchVerifiersByIds,
     updateVerifier,
     shouldRefresh,
   } = useVerifierStore();
@@ -41,7 +42,7 @@ export default function VerifiersPage() {
       }
 
       if (forceRefresh || shouldRefresh() || verifiers.length === 0) {
-        await fetchAllVerifiers(token, BASE_URL);
+        await fetchVerifiersByIds(BASE_URL);
         toast.success("Data refreshed successfully!");
       }
     } catch (err) {

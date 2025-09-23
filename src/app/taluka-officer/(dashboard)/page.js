@@ -25,8 +25,8 @@ export default function Dashboard() {
 
   // Get store functions for background data fetching
   const { fetchAllFarmers, shouldRefresh: shouldRefreshFarmers } = useFarmerStore();
-  const { fetchAllCrops, shouldRefresh: shouldRefreshCrops } = useCropStore();
-  const { fetchAllVerifiers, shouldRefresh: shouldRefreshVerifiers } = useVerifierStore();
+  const { fetchAllCrops,fetchCropsByIds, shouldRefresh: shouldRefreshCrops } = useCropStore();
+  const { fetchAllVerifiers,fetchVerifiersByIds, shouldRefresh: shouldRefreshVerifiers } = useVerifierStore();
 
   const handleLogout = () => {
     if (confirm("Are you sure you want to logout?")) {
@@ -111,11 +111,14 @@ export default function Dashboard() {
       }
 
       if (shouldRefreshCrops()) {
-        backgroundPromises.push(fetchAllCrops(token, BASE_URL));
+        // backgroundPromises.push(fetchAllCrops(token, BASE_URL));
+        backgroundPromises.push(fetchCropsByIds(BASE_URL));
+
       }
 
       if (shouldRefreshVerifiers()) {
-        backgroundPromises.push(fetchAllVerifiers(token, BASE_URL));
+        // backgroundPromises.push(fetchAllVerifiers(token, BASE_URL));
+        backgroundPromises.push(fetchVerifiersByIds(BASE_URL));
       }
 
       // Run all background fetches concurrently but don't await them in UI

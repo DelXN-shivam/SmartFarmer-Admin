@@ -22,6 +22,7 @@ export default function GetAllCropsPage() {
     loading,
     error,
     fetchAllCrops,
+    fetchCropsByIds,
     shouldRefresh
   } = useCropStore()
 
@@ -43,7 +44,8 @@ export default function GetAllCropsPage() {
 
       // Fetch data only if needed
       if (forceRefresh || shouldRefresh() || crops.length === 0) {
-        await fetchAllCrops(token, BASE_URL)
+        // await fetchAllCrops(token, BASE_URL)
+        await fetchCropsByIds(BASE_URL)
         toast.success("Data refreshed successfully!")
       }
     } catch (err) {
@@ -60,53 +62,54 @@ export default function GetAllCropsPage() {
 
   useEffect(() => {
     initializeData()
-  }, [BASE_URL, router, fetchAllCrops, shouldRefresh, crops.length])
+  }, [BASE_URL, router, fetchCropsByIds, shouldRefresh, crops.length])
 
   // Filter crops based on taluka, search, and status
   useEffect(() => {
-    if (user?.taluka && crops.length > 0) {
-      const filtered = crops.filter((crop) => {
-        if (!crop) return false
+    setFilteredCrops(crops)
+    // if (user?.taluka && crops.length > 0) {
+    //   const filtered = crops.filter((crop) => {
+    //     if (!crop) return false
         
-        // Get farmer data to check taluka
-        const farmer = farmersData[crop.farmerId];
-        const matchesTaluka = farmer && farmer.taluka === user.taluka;
+    //     // Get farmer data to check taluka
+    //     const farmer = farmersData[crop.farmerId];
+    //     const matchesTaluka = farmer && farmer.taluka === user.taluka;
         
-        const searchLower = searchTerm.toLowerCase()
-        const name = crop.name || ""
-        const address = crop.address || ""
-        const previousCrop = crop.previousCrop || ""
+    //     const searchLower = searchTerm.toLowerCase()
+    //     const name = crop.name || ""
+    //     const address = crop.address || ""
+    //     const previousCrop = crop.previousCrop || ""
 
-        const matchesSearch = name.toLowerCase().includes(searchLower) ||
-          address.toLowerCase().includes(searchLower) ||
-          previousCrop.toLowerCase().includes(searchLower)
+    //     const matchesSearch = name.toLowerCase().includes(searchLower) ||
+    //       address.toLowerCase().includes(searchLower) ||
+    //       previousCrop.toLowerCase().includes(searchLower)
         
-        const matchesStatus = statusFilter === "all" || 
-          crop.applicationStatus === statusFilter
+    //     const matchesStatus = statusFilter === "all" || 
+    //       crop.applicationStatus === statusFilter
 
-        return matchesTaluka && matchesSearch && matchesStatus
-      })
-      setFilteredCrops(filtered)
-    } else {
-      // If no taluka filter or no user taluka, use regular filtering
-      const filtered = crops.filter((crop) => {
-        if (!crop) return false
-        const searchLower = searchTerm.toLowerCase()
-        const name = crop.name || ""
-        const address = crop.address || ""
-        const previousCrop = crop.previousCrop || ""
+    //     return matchesTaluka && matchesSearch && matchesStatus
+    //   })
+    //   setFilteredCrops(filtered)
+    // } else {
+    //   // If no taluka filter or no user taluka, use regular filtering
+    //   const filtered = crops.filter((crop) => {
+    //     if (!crop) return false
+    //     const searchLower = searchTerm.toLowerCase()
+    //     const name = crop.name || ""
+    //     const address = crop.address || ""
+    //     const previousCrop = crop.previousCrop || ""
 
-        const matchesSearch = name.toLowerCase().includes(searchLower) ||
-          address.toLowerCase().includes(searchLower) ||
-          previousCrop.toLowerCase().includes(searchLower)
+    //     const matchesSearch = name.toLowerCase().includes(searchLower) ||
+    //       address.toLowerCase().includes(searchLower) ||
+    //       previousCrop.toLowerCase().includes(searchLower)
         
-        const matchesStatus = statusFilter === "all" || 
-          crop.applicationStatus === statusFilter
+    //     const matchesStatus = statusFilter === "all" || 
+    //       crop.applicationStatus === statusFilter
 
-        return matchesSearch && matchesStatus
-      })
-      setFilteredCrops(filtered)
-    }
+    //     return matchesSearch && matchesStatus
+    //   })
+    //   setFilteredCrops(filtered)
+    // }
   }, [crops, farmersData, user?.taluka, searchTerm, statusFilter])
 
   if (loading && crops.length === 0) {
