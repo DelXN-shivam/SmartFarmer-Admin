@@ -19,14 +19,14 @@ export default function Dashboard() {
   const [recentLoading, setRecentLoading] = useState(false);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-  const { token, role, email, setUserData } = useUserDataStore();
+  const { token, role, email, user, setUserData } = useUserDataStore();
   const { logout } = useAuth();
   const router = useRouter();
 
   // Get store functions for background data fetching
   const { fetchAllFarmers, shouldRefresh: shouldRefreshFarmers } = useFarmerStore();
-  const { fetchAllCrops,fetchCropsByIds, shouldRefresh: shouldRefreshCrops } = useCropStore();
-  const { fetchAllVerifiers,fetchVerifiersByIds, shouldRefresh: shouldRefreshVerifiers } = useVerifierStore();
+  const { crops, fetchCropsByIds, shouldRefresh: shouldRefreshCrops } = useCropStore();
+  const { fetchVerifiersByIds, shouldRefresh: shouldRefreshVerifiers } = useVerifierStore();
 
   const handleLogout = () => {
     if (confirm("Are you sure you want to logout?")) {
@@ -38,18 +38,8 @@ export default function Dashboard() {
   const getFarmerCount = async () => {
     try {
       setFarmerLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/farmer/count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 200) setFarmerCount(res.data.count);
-    } catch (err) {
-      console.error("Farmer count error:", err);
-      if (err.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
-        logout();
-      } else {
-        toast.error("Error while calculating Farmer Count");
-      }
+      const ids = user?.farmerId || [];
+      setFarmerCount(Array.isArray(ids) ? ids.length : 0);
     } finally {
       setFarmerLoading(false);
     }
@@ -58,18 +48,8 @@ export default function Dashboard() {
   const getVerifierCount = async () => {
     try {
       setVerifierLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/verifier/count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 200) setVerifierCount(res.data.count);
-    } catch (err) {
-      console.error("Verifier count error:", err);
-      if (err.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
-        logout();
-      } else {
-        toast.error("Error while calculating Verifier Count");
-      }
+      const ids = user?.verifierId || [];
+      setVerifierCount(Array.isArray(ids) ? ids.length : 0);
     } finally {
       setVerifierLoading(false);
     }
@@ -78,20 +58,14 @@ export default function Dashboard() {
   const getRecentCrops = async () => {
     try {
       setRecentLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/crop/recent`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 200) {
-        setRecentCrops(res.data.crops || []);
-      }
-    } catch (err) {
-      console.error("Recent crops error:", err);
-      if (err.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
-        logout();
-      } else {
-        toast.error("Error while fetching recent crops");
-      }
+      const ids = Array.isArray(user?.cropId) ? user.cropId : [];
+      // Ensure crops are loaded
+      await fetchCropsByIds(BASE_URL).catch(() => {});
+      // Pick crops belonging to user and sort by createdAt desc
+      const byId = new Set(ids);
+      const mine = (Array.isArray(crops) ? crops : []).filter(c => c && byId.has(c._id));
+      mine.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setRecentCrops(mine.slice(0,5));
     } finally {
       setRecentLoading(false);
     }

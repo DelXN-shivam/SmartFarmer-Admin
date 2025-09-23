@@ -29,6 +29,17 @@ export const useUserDataStore = create(
         });
       },
 
+      // Append a newly created verifier ID to the logged-in user's profile in-place
+      addVerifierId: (verifierId) => {
+        const current = get().user;
+        if (!current || !verifierId) return;
+        const existing = Array.isArray(current.verifierId) ? current.verifierId : [];
+        if (existing.includes(verifierId)) return;
+        set({
+          user: { ...current, verifierId: [verifierId, ...existing] },
+        });
+      },
+
       // Clear user data (on logout)
       clearUserData: () => {
         set({

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useVerifierStore } from '@/stores/verifierStore';
+import { useUserDataStore } from '@/stores/userDataStore';
 
 
 const stateMaharashtra = 'Maharashtra';
@@ -694,6 +695,16 @@ const AddVerifierPage = () => {
           }
         } catch (err) {
           console.error("Background refresh failed:", err);
+        }
+
+        // Also update currently logged-in user's profile IDs in user store
+        try {
+          const addVerifierId = useUserDataStore.getState().addVerifierId;
+          if (newVerifier?._id && typeof addVerifierId === 'function') {
+            addVerifierId(newVerifier._id);
+          }
+        } catch (e) {
+          console.error('Failed to append verifierId into user store', e);
         }
         
 
