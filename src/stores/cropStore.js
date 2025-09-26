@@ -1,3 +1,4 @@
+
 // stores/cropStore.js
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -16,50 +17,60 @@ export const useCropStore = create(
 
       // Fetch crops by IDs from userDataStore
       fetchCropsByIds: async (BASE_URL) => {
-      const { user } = useUserDataStore.getState();
-      const ids = user?.cropId || [];
+        const { user, token } = useUserDataStore.getState();
+        const ids = user?.cropId || [];
 
-      if (!ids.length) {
-        set({ crops: [], lastFetched: Date.now() });
-        return;
-      }
-
-      set({ loading: true, error: null });
-      try {
-        // Try fetch from API
-        const response = await fetch(`${BASE_URL}/api/crop/get-by-ids`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch crops by IDs");
-        const data = await response.json();
-        if (data.crops) {
-          set({ crops: data.crops, lastFetched: Date.now(), loading: false });
+        if (!ids.length) {
+          set({ crops: [], lastFetched: Date.now() });
+          return;
         }
-      } catch (error) {
-        console.warn("Offline or fetch failed, using cached crops");
-        // Offline mode: crops already in localStorage, just use them
-      } finally {
-        set({ loading: false });
-        // Sync farmers from whatever crops are present in store (offline-safe)
-        useFarmerStore.getState().syncFarmersFromCrops();
-      }
-    },
 
+        set({ loading: true, error: null });
+        try {
+          // Try fetch from API
+          const response = await fetch(`${BASE_URL}/api/crop/get-by-ids`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids }),
+          });
+
+          if (!response.ok) throw new Error("Failed to fetch crops by IDs");
+
+          const data = await response.json();
+          if (data.crops) {
+            set({
+              crops: data.crops,
+              lastFetched: Date.now(),
+              loading: false,
+            });
+
+            // ✅ crops ke sath farmers + verifiers bhi fetch karo
+            await get().fetchAdditionalData(token, BASE_URL, data.crops);
+          }
+        } catch (error) {
+          console.warn("Offline or fetch failed, using cached crops");
+        } finally {
+          set({ loading: false });
+          // ✅ offline case me bhi atleast farmerIds sync ho jaye
+          useFarmerStore.getState().syncFarmersFromCrops();
+        }
+      },
 
       // Fetch additional data (farmers and verifiers)
       fetchAdditionalData: async (token, BASE_URL, crops) => {
         try {
           const farmerIds = [
             ...new Set(
-              crops.map((c) => c.farmerId).filter((id) => id && !get().farmersData[id])
+              crops
+                .map((c) => c.farmerId)
+                .filter((id) => id && !get().farmersData[id])
             ),
           ];
           const verifierIds = [
             ...new Set(
-              crops.map((c) => c.verifierId).filter((id) => id && !get().verifiersData[id])
+              crops
+                .map((c) => c.verifierId)
+                .filter((id) => id && !get().verifiersData[id])
             ),
           ];
 
@@ -90,14 +101,17 @@ export const useCropStore = create(
 
           // Fetch verifiers
           if (verifierIds.length > 0) {
-            const verifiersResponse = await fetch(`${BASE_URL}/api/verifier/by-ids`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ ids: verifierIds }),
-            });
+            const verifiersResponse = await fetch(
+              `${BASE_URL}/api/verifier/by-ids`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ ids: verifierIds }),
+              }
+            );
 
             if (verifiersResponse.ok) {
               const verifiersData = await verifiersResponse.json();
@@ -135,7 +149,6 @@ export const useCropStore = create(
     { name: "crop-storage" }
   )
 );
-
 
 
 

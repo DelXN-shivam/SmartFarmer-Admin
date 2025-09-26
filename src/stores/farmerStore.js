@@ -1,3 +1,6 @@
+
+
+
 // stores/farmerStore.js
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -80,6 +83,98 @@ export const useFarmerStore = create(
     }
   )
 );
+
+
+
+
+
+
+
+
+
+
+// // stores/farmerStore.js
+// import { create } from "zustand";
+// import { persist } from "zustand/middleware";
+// import axios from "axios";
+// import { useCropStore } from "./cropStore"; // ⬅️ Import cropStore to sync farmers
+
+// export const useFarmerStore = create(
+//   persist(
+//     (set, get) => ({
+//       farmersData: {}, // farmers keyed by _id
+//       lastFetched: null,
+//       loading: false,
+//       error: null,
+
+//       // Fetch all farmers from API
+//       fetchAllFarmers: async (token, BASE_URL) => {
+//         set({ loading: true, error: null });
+//         try {
+//           const res = await axios.get(`${BASE_URL}/api/farmers`, {
+//             headers: { Authorization: `Bearer ${token}` },
+//           });
+//           const data = res.data; // assume array of farmers
+
+//           // Transform array to object keyed by _id
+//           const farmersObj = {};
+//           data.forEach((f) => (farmersObj[f._id] = f));
+
+//           set({
+//             farmersData: farmersObj,
+//             lastFetched: Date.now(),
+//             loading: false,
+//           });
+//         } catch (err) {
+//           console.error("Failed to fetch farmers:", err);
+//           set({ error: "Failed to fetch farmers", loading: false });
+//         }
+//       },
+
+//       // Check if data should refresh (10 min rule)
+//       shouldRefresh: () => {
+//         const last = get().lastFetched;
+//         return !last || Date.now() - last > 10 * 60 * 1000;
+//       },
+
+//       // Sync farmers from crops in cropStore
+//       syncFarmersFromCrops: () => {
+//   const { crops } = useCropStore.getState();
+//   if (!crops || !crops.length) return;
+
+//   const currentFarmers = get().farmersData;
+//   const farmersMap = {};
+//   let hasNew = false;
+
+//   crops.forEach((c) => {
+//     if (c.farmerId && !currentFarmers[c.farmerId]) {
+//       farmersMap[c.farmerId] = { _id: c.farmerId, name: "Unknown", village: "Unknown" };
+//       hasNew = true;
+//     }
+//   });
+
+//   if (hasNew) {
+//     set({ farmersData: { ...currentFarmers, ...farmersMap } });
+//   }
+// },
+
+
+
+//       // Clear the store
+//       clearStore: () =>
+//         set({
+//           farmersData: {},
+//           lastFetched: null,
+//           loading: false,
+//           error: null,
+//         }),
+//     }),
+//     {
+//       name: "farmer-storage", // localStorage key
+//       getStorage: () => localStorage,
+//     }
+//   )
+// );
 
 
 
