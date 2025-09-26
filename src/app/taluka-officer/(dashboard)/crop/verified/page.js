@@ -1,15 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { X } from "lucide-react"
+import { X, RefreshCw } from "lucide-react"
 import GoToTopButton from "@/components/ui/GoToTopButton"
 import { Input } from "@/components/ui/input"
 import CropCard from "@/components/ui/CropCard"
 import { useCropStore } from "@/stores/cropStore"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function VerifiedCropsPage() {
-  const { crops, farmersData, verifiersData, loading } = useCropStore()
+  const { crops, farmersData, verifiersData, loading, fetchCropsByIds } = useCropStore()
   const [searchTerm, setSearchTerm] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
+  const router = useRouter()
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
 
   // Filter only verified crops
   const verifiedCrops = crops.filter(crop => 
@@ -30,6 +35,25 @@ export default function VerifiedCropsPage() {
       previousCrop.toLowerCase().includes(searchLower)
     )
   })
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true)
+      const token = localStorage.getItem("Authorization")?.split(" ")[1]
+      if (!token) {
+        toast.error("Session expired. Please login again.")
+        router.push("/login")
+        return
+      }
+      await fetchCropsByIds(BASE_URL)
+      toast.success("Data refreshed successfully!")
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+      toast.error("Failed to refresh data")
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   if (loading && crops.length === 0) {
     return (
@@ -63,6 +87,14 @@ export default function VerifiedCropsPage() {
               </button>
             )}
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
       </div>
       <CropCard 
@@ -74,6 +106,92 @@ export default function VerifiedCropsPage() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+// "use client"
+
+// import { useState } from "react"
+// import { X } from "lucide-react"
+// import GoToTopButton from "@/components/ui/GoToTopButton"
+// import { Input } from "@/components/ui/input"
+// import CropCard from "@/components/ui/CropCard"
+// import { useCropStore } from "@/stores/cropStore"
+
+// export default function VerifiedCropsPage() {
+//   const { crops, farmersData, verifiersData, loading } = useCropStore()
+//   const [searchTerm, setSearchTerm] = useState("")
+
+//   // Filter only verified crops
+//   const verifiedCrops = crops.filter(crop => 
+//     crop.applicationStatus === 'verified'
+//   )
+
+//   // Apply search filter
+//   const filteredCrops = verifiedCrops.filter((crop) => {
+//     if (!crop) return false
+//     const searchLower = searchTerm.toLowerCase()
+//     const name = crop.name || ""
+//     const address = crop.address || ""
+//     const previousCrop = crop.previousCrop || ""
+
+//     return (
+//       name.toLowerCase().includes(searchLower) ||
+//       address.toLowerCase().includes(searchLower) ||
+//       previousCrop.toLowerCase().includes(searchLower)
+//     )
+//   })
+
+//   if (loading && crops.length === 0) {
+//     return (
+//       <div className="flex justify-center items-center h-screen">
+//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+//         <p className="ml-4 text-gray-600">Loading Verified Crops...</p>
+//       </div>
+//     )
+//   }
+
+//   return (
+//     <div className="p-4 max-w-7xl mx-auto">
+//       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-16">
+//         <h1 className="text-3xl font-bold text-gray-900">Verified Crops ({verifiedCrops.length})</h1>
+//         <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
+//           <div className="relative w-full sm:w-auto">
+//             <Input
+//               type="text"
+//               placeholder="Search verified crops..."
+//               className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+//               value={searchTerm}
+//               onChange={(e) => setSearchTerm(e.target.value)}
+//             />
+//             {searchTerm && (
+//               <button
+//                 onClick={() => setSearchTerm("")}
+//                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+//                 aria-label="Clear search"
+//               >
+//                 <X className="h-5 w-5" />
+//               </button>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+//       <CropCard 
+//         crops={filteredCrops} 
+//         farmersData={farmersData}
+//         verifiersData={verifiersData}
+//       />
+//       <GoToTopButton />
+//     </div>
+//   )
+// }
 
 
 

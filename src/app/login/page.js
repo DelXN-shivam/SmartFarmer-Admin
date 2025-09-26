@@ -125,6 +125,7 @@ export default function LoginPage() {
       if (res.status === 200 && data.token) {
         // Extract taluka from response data - based on your API response structure
         const taluka = data.data?.taluka;
+        console.log("Extracted taluka:", taluka);
         
         // Save email if "Remember me" is checked
         if (rememberMe) {

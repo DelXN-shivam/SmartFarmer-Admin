@@ -358,6 +358,7 @@ for (const [district, locations] of Object.entries(maharashtraDistricts)) {
 
 const AddVerifierPage = () => {
   const { addVerifier } = useVerifierStore(); // Add this line
+  const { user, role, token } = useUserDataStore();
   // Add the verifier store
   const { verifiers,
     loading,
@@ -645,6 +646,28 @@ const AddVerifierPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    console.log(`User ID:- `, user?._id);
+    
+    // DEBUG: Check karo kahan se ID mil sakta hai
+    console.log("UserDataStore:", useUserDataStore.getState());
+    console.log("LocalStorage:", localStorage);
+
+    // Different sources try karo
+    // const currentTalukaOfficerId =
+    //   useUserDataStore.getState().userData?._id ||
+    //   useUserDataStore.getState()._id ||
+    //   localStorage.getItem("userId") ||
+    //   localStorage.getItem("talukaOfficerId") ||
+    //   localStorage.getItem("currentUserId");
+
+    // console.log("Found ID:", currentTalukaOfficerId);
+
+    // Agar ID nahi mila toh error show karo
+    // if (!currentTalukaOfficerId) {
+    //   toast.error("Taluka Officer ID not found. Please login again.");
+    //   return;
+    // }
     console.log("Submitting form...", formData)
 
     if (!validateForm()) {
@@ -658,10 +681,14 @@ const AddVerifierPage = () => {
       if (!token) {
         toast.error("Authentication token not found, redirecting to login")
         setTimeout(async () => {
-           router.push("/login")
+          router.push("/login")
         }, 3000)
         return
       }
+
+      // Get currently logged-in taluka officer's ID from store or localStorage
+      const currentTalukaOfficerId = useUserDataStore.getState().userData?._id;
+      // Ya fir localStorage se: const currentTalukaOfficerId = localStorage.getItem("currentTalukaOfficerId");
 
       const { ...submitData } = formData
       const transformedData = {
@@ -671,6 +698,7 @@ const AddVerifierPage = () => {
         taluka: submitData.taluka.toLowerCase(),
         village: submitData.village.toLowerCase(),
         allocatedTaluka: allocatedTalukas.map((t) => t.toLowerCase()),
+        talukaOfficerId: user?._id,
       }
 
       const response = await axios.post(`${BASE_URL}/api/verifier/register`, transformedData, {
@@ -687,11 +715,11 @@ const AddVerifierPage = () => {
         // addVerifier(newVerifier);
 
         // Background refresh: refetch all verifiers so store stays in sync
-         try {
+        try {
           const token = localStorage.getItem("Authorization")?.split(" ")[1];
           if (token) {
-             // fire-and-forget (don't block UI)
-             fetchAllVerifiers(token, BASE_URL);
+            // fire-and-forget (don't block UI)
+            fetchAllVerifiers(token, BASE_URL);
           }
         } catch (err) {
           console.error("Background refresh failed:", err);
@@ -706,7 +734,7 @@ const AddVerifierPage = () => {
         } catch (e) {
           console.error('Failed to append verifierId into user store', e);
         }
-        
+
 
         toast.success("Verifier registered successfully!", {
           duration: 4000,
@@ -766,7 +794,7 @@ const AddVerifierPage = () => {
     } finally {
       setIsSubmitting(false)
     }
-    
+
   }
 
   if (submitSuccess) {
