@@ -49,34 +49,49 @@ export const useVerifierStore = create(
       },
 
       // Fetch all verifiers
-      fetchAllVerifiers: async (token, BASE_URL) => {
-        set({ loading: true, error: null })
-        try {
-          const response = await fetch(`${BASE_URL}/api/verifier`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          })
+      // In your verifierStore.js, update fetchAllVerifiers:
+    fetchAllVerifiers: async (token, BASE_URL) => {
+      set({ loading: true, error: null })
+      try {
+        console.log("🌐 API Call: Fetching ALL verifiers from:", `${BASE_URL}/api/verifier`);
+        
+        const response = await fetch(`${BASE_URL}/api/verifier`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
 
-          if (!response.ok) throw new Error('Failed to fetch verifiers')
+        console.log("📡 Response status:", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
 
-          const data = await response.json()
-          if (data.data) {
-            set({ 
-              verifiers: data.data,
-              lastFetched: Date.now(),
-              loading: false 
-            })
-          }
-        } catch (error) {
+        const data = await response.json()
+        console.log("✅ API Success - Total verifiers received:", data.data?.length);
+        console.log("📦 Data structure:", data);
+        
+        if (data.data && Array.isArray(data.data)) {
           set({ 
-            error: error.message, 
+            verifiers: data.data,
+            lastFetched: Date.now(),
             loading: false 
           })
-          throw error
+          console.log("💾 Store updated successfully with", data.data.length, "verifiers");
+        } else {
+          console.warn("⚠️ Unexpected data format:", data);
+          throw new Error('Invalid data format received from API')
         }
-      },
+      } catch (error) {
+        console.error("❌ Store Error:", error)
+        set({ 
+          error: error.message, 
+          loading: false 
+        })
+        throw error
+      }
+    },
 
       // Add a new verifier to the store
       addVerifier: (newVerifier) => {

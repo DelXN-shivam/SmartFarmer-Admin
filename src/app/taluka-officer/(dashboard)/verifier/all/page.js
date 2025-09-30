@@ -20,7 +20,7 @@ export default function VerifiersPage() {
     loading,
     error,
     fetchAllVerifiers,
-    fetchVerifiersByIds,
+    // fetchVerifiersByIds,
     updateVerifier,
     shouldRefresh,
   } = useVerifierStore();
@@ -31,83 +31,74 @@ export default function VerifiersPage() {
   const [filteredVerifiers, setFilteredVerifiers] = useState([]);
 
   // Function to initialize data
-  const initializeData = async (forceRefresh = false) => {
-    try {
-      setRefreshing(true);
-      const token = localStorage.getItem("Authorization")?.split(" ")[1];
-      if (!token) {
-        toast.error("Session expired. Please login again.");
-        router.push("/login");
-        return;
-      }
-
-      if (forceRefresh || shouldRefresh() || verifiers.length === 0) {
-        await fetchVerifiersByIds(BASE_URL);
-        toast.success("Data refreshed successfully!");
-      }
-    } catch (err) {
-      console.error("Error initializing data:", err);
-      if (err.response?.status === 401) {
-        localStorage.removeItem("Authorization");
-        toast.error("Session expired. Redirecting to login...");
-        router.push("/login");
-      }
-    } finally {
-      setRefreshing(false);
+  // Function to initialize data - REPLACE THIS FUNCTION
+const initializeData = async (forceRefresh = false) => {
+  try {
+    setRefreshing(true);
+    const token = localStorage.getItem("Authorization")?.split(" ")[1];
+    if (!token) {
+      toast.error("Session expired. Please login again.");
+      router.push("/login");
+      return;
     }
-  };
+
+    // ✅ FIX: Use fetchAllVerifiers instead of fetchVerifiersByIds
+    if (forceRefresh || shouldRefresh() || verifiers.length === 0) {
+      console.log("🔄 Fetching ALL verifiers...",verifiers);
+      await fetchAllVerifiers(token, BASE_URL);
+      toast.success("Data refreshed successfully!");
+    }
+
+  } catch (err) {
+    console.error("Error initializing data:", err);
+    if (err.response?.status === 401) {
+      localStorage.removeItem("Authorization");
+      toast.error("Session expired. Redirecting to login...");
+      router.push("/login");
+    }
+  } finally {
+    setRefreshing(false);
+  }
+};
 
   useEffect(() => {
     initializeData();
   }, [BASE_URL, router, fetchAllVerifiers, shouldRefresh, verifiers.length]);
 
   // Filter verifiers based on taluka, search, and status
-  useEffect(() => {
-    if (user?.taluka && verifiers.length > 0) {
-      const filtered = verifiers.filter((verifier) => {
-        if (!verifier || typeof verifier !== "object") return false;
-        
-        const matchesTaluka = verifier.taluka === user.taluka;
-        const searchLower = searchTerm.toLowerCase();
-        const name = verifier.name || "";
-        const village = verifier.village || "";
-        const district = verifier.district || "";
-        const taluka = verifier.taluka || "";
+  // Filter verifiers based on taluka, search, and status - REPLACE THIS
+useEffect(() => {
+  let filtered = verifiers.filter((verifier) => {
+    if (!verifier || typeof verifier !== "object") return false;
 
-        const matchesSearch = name.toLowerCase().includes(searchLower) ||
-          village.toLowerCase().includes(searchLower) ||
-          district.toLowerCase().includes(searchLower) ||
-          taluka.toLowerCase().includes(searchLower);
-        
-        const matchesStatus = statusFilter === "all" || 
-          verifier.applicationStatus === statusFilter;
+    const searchLower = searchTerm.toLowerCase();
+    const name = verifier.name || "";
+    const village = verifier.village || "";
+    const district = verifier.district || "";
+    const taluka = verifier.taluka || "";
 
-        return matchesTaluka && matchesSearch && matchesStatus;
-      });
-      setFilteredVerifiers(filtered);
-    } else {
-      // If no taluka filter or no user taluka, use regular filtering
-      const filtered = verifiers.filter((verifier) => {
-        if (!verifier || typeof verifier !== "object") return false;
-        const searchLower = searchTerm.toLowerCase();
-        const name = verifier.name || "";
-        const village = verifier.village || "";
-        const district = verifier.district || "";
-        const taluka = verifier.taluka || "";
+    const matchesSearch =
+      name.toLowerCase().includes(searchLower) ||
+      village.toLowerCase().includes(searchLower) ||
+      district.toLowerCase().includes(searchLower) ||
+      taluka.toLowerCase().includes(searchLower);
 
-        const matchesSearch = name.toLowerCase().includes(searchLower) ||
-          village.toLowerCase().includes(searchLower) ||
-          district.toLowerCase().includes(searchLower) ||
-          taluka.toLowerCase().includes(searchLower);
-        
-        const matchesStatus = statusFilter === "all" || 
-          verifier.applicationStatus === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || verifier.applicationStatus === statusFilter;
 
-        return matchesSearch && matchesStatus;
-      });
-      setFilteredVerifiers(filtered);
-    }
-  }, [verifiers, user?.taluka, searchTerm, statusFilter]);
+    // ✅ FIX: District aur taluka dono filter based on user
+    const matchesDistrict = user?.district ? 
+      verifier.district?.toLowerCase() === user.district.toLowerCase() : true;
+    
+    const matchesTaluka = user?.taluka ? 
+      verifier.taluka?.toLowerCase() === user.taluka.toLowerCase() : true;
+
+    return matchesDistrict && matchesTaluka && matchesSearch && matchesStatus;
+  });
+
+  console.log("📊 Total verifiers:", verifiers.length, "| Filtered:", filtered.length);
+  setFilteredVerifiers(filtered);
+}, [verifiers, user?.district, user?.taluka, searchTerm, statusFilter]);
 
   const handleVerifyVerifier = async (verifierToVerify) => {
     try {

@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   // Stores
   const { farmersData, crops, fetchCropsByIds, shouldRefresh: shouldRefreshCrops } = useCropStore();
-  const { fetchVerifiersByIds, shouldRefresh: shouldRefreshVerifiers } = useVerifierStore();
+  const { fetchVerifiersByIds, shouldRefresh: shouldRefreshVerifiers , verifiers,fetchAllVerifiers, } = useVerifierStore();
   const { quickRefresh: refreshAdminData, shouldRefresh: shouldRefreshAdmin } = useAdminStore();
 
   const handleLogout = () => {
@@ -45,12 +45,45 @@ export default function Dashboard() {
     setFarmerLoading(false);
   };
 
-  const getVerifierCount = async () => {
-    setVerifierLoading(true);
+  // Dashboard page.js - getVerifierCount function UPDATE
+const getVerifierCount = async () => {
+  setVerifierLoading(true);
+  
+  try {
+    // ✅ FIX: Use verifierStore se filtered count lo
+    const { verifiers } = useVerifierStore.getState();
+    
+    if (verifiers && verifiers.length > 0) {
+      // ✅ Same filter logic use karo jo all verifiers page mein hai
+      const filteredCount = verifiers.filter((verifier) => {
+        if (!verifier || typeof verifier !== "object") return false;
+        
+        // ✅ Same filtering as all verifiers page
+        const matchesDistrict = user?.district ? 
+          verifier.district?.toLowerCase() === user.district.toLowerCase() : true;
+        
+        const matchesTaluka = user?.taluka ? 
+          verifier.taluka?.toLowerCase() === user.taluka.toLowerCase() : true;
+
+        return matchesDistrict && matchesTaluka;
+      }).length;
+      
+      setVerifierCount(filteredCount);
+      console.log("📊 Dashboard - Filtered verifier count:", filteredCount);
+    } else {
+      // Agar store empty hai toh user.verifierId use karo
+      const ids = user?.verifierId || [];
+      setVerifierCount(Array.isArray(ids) ? ids.length : 0);
+    }
+  } catch (error) {
+    console.error("Error calculating verifier count:", error);
+    // Fallback to original logic
     const ids = user?.verifierId || [];
     setVerifierCount(Array.isArray(ids) ? ids.length : 0);
+  } finally {
     setVerifierLoading(false);
-  };
+  }
+};
 
   const getRecentCrops = async () => {
     try {
@@ -67,26 +100,39 @@ export default function Dashboard() {
   };
 
   // Background refresh
-  const fetchBackgroundData = async () => {
-    if (!token) return;
+  // Dashboard page.js - fetchBackgroundData function UPDATE
+const fetchBackgroundData = async () => {
+  if (!token) return;
 
-    try {
-      const backgroundPromises = [];
+  try {
+    const backgroundPromises = [];
 
-      // Crop store refresh
-      if (shouldRefreshCrops()) backgroundPromises.push(fetchCropsByIds(BASE_URL));
-      if (shouldRefreshVerifiers()) backgroundPromises.push(fetchVerifiersByIds(BASE_URL));
-      if (shouldRefreshAdmin()) backgroundPromises.push(refreshAdminData(token, BASE_URL, role));
-
-      await Promise.allSettled(backgroundPromises);
-      getFarmerCount();
-      getVerifierCount();
-      getRecentCrops();
-    } catch (err) {
-      console.error("Background fetch error:", err);
+    // Crop store refresh
+    if (shouldRefreshCrops()) backgroundPromises.push(fetchCropsByIds(BASE_URL));
+    
+    // ✅ FIX: Verifier store bhi refresh karo
+    if (shouldRefreshVerifiers()) {
+      backgroundPromises.push(
+        fetchAllVerifiers(token, BASE_URL).catch(err => {
+          console.error("Verifier fetch failed:", err);
+          // Fallback to IDs method
+          return fetchVerifiersByIds(BASE_URL);
+        })
+      );
     }
-  };
+    
+    if (shouldRefreshAdmin()) backgroundPromises.push(refreshAdminData(token, BASE_URL, role));
 
+    await Promise.allSettled(backgroundPromises);
+    
+    // ✅ Refresh counts after data fetch
+    getFarmerCount();
+    getVerifierCount();
+    getRecentCrops();
+  } catch (err) {
+    console.error("Background fetch error:", err);
+  }
+};
   const handleRefresh = async () => {
     if (refreshing) return;
 
