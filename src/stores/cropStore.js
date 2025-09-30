@@ -134,7 +134,59 @@ export const useCropStore = create(
       // Check if data needs refreshing
       shouldRefresh: () => {
         const { lastFetched } = get();
-        return !lastFetched || Date.now() - lastFetched > 3 * 60 * 1000;
+        return !lastFetched || Date.now() - lastFetched > 10 * 60 * 1000;
+      },
+
+      // cropStore.js - YE FUNCTION ADD KARO
+      fetchAllCrops: async (token, BASE_URL) => {
+        set({ loading: true, error: null });
+        try {
+          console.log("🌐 Fetching ALL crops from:", `${BASE_URL}/api/crop/all`);
+          
+          const response = await fetch(`${BASE_URL}/api/crop/all`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) throw new Error('Failed to fetch all crops');
+
+          const data = await response.json();
+          console.log("✅ All crops response:", data);
+          
+          // ✅ Handle different response formats
+          let cropsArray = [];
+          
+          if (Array.isArray(data)) {
+            cropsArray = data;
+          } else if (Array.isArray(data?.data)) {
+            cropsArray = data.data;
+          } else if (data?.crops && Array.isArray(data.crops)) {
+            cropsArray = data.crops;
+          } else {
+            throw new Error('Invalid crops response format');
+          }
+          
+          console.log("📦 Total crops received:", cropsArray.length);
+
+          set({
+            crops: cropsArray,
+            lastFetched: Date.now(),
+            loading: false,
+          });
+
+          // ✅ Fetch additional data for all crops
+          await get().fetchAdditionalData(token, BASE_URL, cropsArray);
+          
+        } catch (error) {
+          console.error("❌ Error fetching all crops:", error);
+          set({ 
+            error: error.message, 
+            loading: false 
+          });
+          throw error;
+        }
       },
 
       // Clear store

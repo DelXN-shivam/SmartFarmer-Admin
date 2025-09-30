@@ -7,6 +7,8 @@ import { toast } from "sonner";
 
 import { useCropStore } from "@/stores/cropStore"; 
 import { useUserDataStore } from "@/stores/userDataStore";
+import { useFarmerStore } from "@/stores/farmerStore"; // ✅ ADD THIS
+import { useAuth } from "@/context/AuthContext"; // ✅ ADD THIS
 
 export default function FarmersPage() {
   const {
@@ -18,54 +20,108 @@ export default function FarmersPage() {
     error,
   } = useCropStore(); 
 
+  // ✅ ADD: FarmerStore hooks
+  const { 
+    farmersData: allFarmers, 
+    fetchAllFarmers, 
+    syncFarmersFromCrops,
+    shouldRefresh: shouldRefreshFarmers 
+  } = useFarmerStore();
+
+  const { user } = useAuth(); // ✅ ADD: For filtering
+
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
   const { token } = useUserDataStore(); 
 
-  // Fetch crops (and farmers) on mount
+  // ✅ UPDATED: Fetch both crops AND farmers
   useEffect(() => {
     const initializeData = async () => {
       setRefreshing(true);
       try {
+        // Fetch crops first
         await fetchCropsByIds(BASE_URL);
+        
+        // ✅ THEN fetch all farmers
+        if (shouldRefreshFarmers()) {
+          await fetchAllFarmers(token, BASE_URL);
+        } else {
+          // ✅ Sync farmers from crops if farmerStore empty
+          syncFarmersFromCrops();
+        }
+        
         toast.success("Farmers data loaded successfully!");
       } catch (err) {
+        console.error("Initialization error:", err);
         toast.error("Failed to fetch from API, using cached data.");
       } finally {
         setRefreshing(false);
       }
     };
     initializeData();
-  }, [fetchCropsByIds, BASE_URL]);
+  }, [fetchCropsByIds, fetchAllFarmers, syncFarmersFromCrops, BASE_URL, token, shouldRefreshFarmers]);
 
-  // Filtered farmers using useMemo for performance
+  // ✅ UPDATED: Filter farmers based on user's taluka & district
   const filteredFarmers = useMemo(() => {
-    const farmersArray = Object.values(farmersData || {});
+    const farmersArray = Object.values(allFarmers || {});
     if (!farmersArray.length) return [];
 
     const term = searchTerm.toLowerCase();
+    const userTaluka = user?.taluka?.toLowerCase();
+    const userDistrict = user?.district?.toLowerCase();
+
     return farmersArray.filter((farmer) => {
-      return (
+      // Search filter
+      const matchesSearch = 
         farmer.name?.toLowerCase().includes(term) ||
         farmer.village?.toLowerCase().includes(term) ||
-        farmer.district?.toLowerCase().includes(term)
-      );
-    });
-  }, [farmersData, searchTerm]);
+        farmer.district?.toLowerCase().includes(term);
 
+      // ✅ Taluka & District filter (same as verifiers)
+      const matchesDistrict = userDistrict ? 
+        farmer.district?.toLowerCase() === userDistrict : true;
+      
+      const matchesTaluka = userTaluka ? 
+        farmer.taluka?.toLowerCase() === userTaluka : true;
+
+      return matchesSearch && matchesDistrict && matchesTaluka;
+    });
+  }, [allFarmers, searchTerm, user?.taluka, user?.district]);
+
+  // ✅ UPDATED: Refresh both crops and farmers
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
+      
+      // Refresh crops
       await fetchCropsByIds(BASE_URL);
+      
+      // ✅ Refresh farmers
+      await fetchAllFarmers(token, BASE_URL);
+      
       toast.success("Data refreshed successfully!");
     } catch (err) {
+      console.error("Refresh error:", err);
       toast.error("Failed to refresh data.");
     } finally {
       setRefreshing(false);
     }
   };
+
+  // Debug: Check what's in storage
+  useEffect(() => {
+    console.log("🔍 Farmers in farmerStore:", Object.values(allFarmers || {}).length);
+    console.log("🔍 User taluka/district:", user?.taluka, user?.district);
+    
+    // Check localStorage directly
+    const stored = localStorage.getItem('farmer-storage');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      console.log("💽 LocalStorage farmers count:", Object.values(parsed.state.farmersData || {}).length);
+    }
+  }, [allFarmers, user]);
 
   if (loading) {
     return (
@@ -105,7 +161,9 @@ export default function FarmersPage() {
   return (
     <div className="p-4 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
-        <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {user?.taluka ? `${user.taluka} Farmers Directory` : "Farmers Directory"}
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="relative flex-grow">
@@ -138,13 +196,40 @@ export default function FarmersPage() {
         </div>
       </div>
 
-      {/* Only farmers who have crops */}
+      {/* Show counts for debugging */}
+      {/* <div className="mb-4 text-sm text-gray-600">
+        Total farmers in storage: {Object.values(allFarmers || {}).length} | 
+        Filtered farmers: {filteredFarmers.length}
+      </div> */}
+
+      {/* Use filtered farmers from farmerStore */}
       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
 
       <GoToTopButton />
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -308,159 +393,153 @@ export default function FarmersPage() {
 
 
 
+// // "use client";
+// // import { useState, useEffect, useMemo } from "react";
+// // import FarmerCard from "@/components/ui/FarmerCard";
+// // import { X, RefreshCw } from "lucide-react";
+// // import GoToTopButton from "@/components/ui/GoToTopButton";
+// // import { toast } from "sonner";
 
+// // import { useCropStore } from "@/stores/cropStore"; 
+// // import { useUserDataStore } from "@/stores/userDataStore";
 
+// // export default function FarmersPage() {
+// //   const {
+// //     farmersData, 
+// //     crops,
+// //     fetchCropsByIds,
+// //     shouldRefresh,
+// //     loading,
+// //     error,
+// //   } = useCropStore(); 
 
+// //   const [searchTerm, setSearchTerm] = useState("");
+// //   const [refreshing, setRefreshing] = useState(false);
 
+// //   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+// //   const { token } = useUserDataStore(); 
 
-// "use client";
-// import { useState, useEffect } from "react";
-// import FarmerCard from "@/components/ui/FarmerCard";
-// import { X, RefreshCw } from "lucide-react";
-// import GoToTopButton from "@/components/ui/GoToTopButton";
-// import { toast } from "sonner";
+// //   // Fetch crops (and farmers) on mount
+// //   useEffect(() => {
+// //     const initializeData = async () => {
+// //       setRefreshing(true);
+// //       try {
+// //         await fetchCropsByIds(BASE_URL);
+// //         toast.success("Farmers data loaded successfully!");
+// //       } catch (err) {
+// //         toast.error("Failed to fetch from API, using cached data.");
+// //       } finally {
+// //         setRefreshing(false);
+// //       }
+// //     };
+// //     initializeData();
+// //   }, [fetchCropsByIds, BASE_URL]);
 
-// import { useCropStore } from "@/stores/cropStore"; // ✅ yaha se lena hai
-// import { useUserDataStore } from "@/stores/userDataStore";
+// //   // Filtered farmers using useMemo for performance
+// //   const filteredFarmers = useMemo(() => {
+// //     const farmersArray = Object.values(farmersData || {});
+// //     if (!farmersArray.length) return [];
 
+// //     const term = searchTerm.toLowerCase();
+// //     return farmersArray.filter((farmer) => {
+// //       return (
+// //         farmer.name?.toLowerCase().includes(term) ||
+// //         farmer.village?.toLowerCase().includes(term) ||
+// //         farmer.district?.toLowerCase().includes(term)
+// //       );
+// //     });
+// //   }, [farmersData, searchTerm]);
 
-// export default function FarmersPage() {
-//   const {
-//     farmersData, // ✅ cropStore me ye object hai
-//     crops,
-//     fetchCropsByIds,
-//     shouldRefresh,
-//     loading,
-//     error,
-//   } = useCropStore(); // ✅ switch to cropStore
+// //   const handleRefresh = async () => {
+// //     try {
+// //       setRefreshing(true);
+// //       await fetchCropsByIds(BASE_URL);
+// //       toast.success("Data refreshed successfully!");
+// //     } catch (err) {
+// //       toast.error("Failed to refresh data.");
+// //     } finally {
+// //       setRefreshing(false);
+// //     }
+// //   };
 
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [filteredFarmers, setFilteredFarmers] = useState([]);
-//   const [refreshing, setRefreshing] = useState(false);
+// //   if (loading) {
+// //     return (
+// //       <div className="flex justify-center items-center h-screen">
+// //         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+// //         <p className="ml-4 text-gray-600">Loading farmers...</p>
+// //       </div>
+// //     );
+// //   }
 
-//   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-//   const { token } = useUserDataStore(); // ✅ get token from zustand store
+// //   if (error) {
+// //     return (
+// //       <div className="p-4 max-w-7xl mx-auto">
+// //         <h1 className="text-3xl font-bold text-gray-900 mb-4">
+// //           Farmers Directory
+// //         </h1>
+// //         <div className="bg-red-50 border-l-4 border-red-500 p-4">
+// //           <div className="flex">
+// //             <div className="flex-shrink-0">
+// //               <X className="h-5 w-5 text-red-500" />
+// //             </div>
+// //             <div className="ml-3">
+// //               <p className="text-sm text-red-700">{error}</p>
+// //               <button
+// //                 onClick={handleRefresh}
+// //                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
+// //               >
+// //                 Try again
+// //               </button>
+// //             </div>
+// //           </div>
+// //         </div>
+// //       </div>
+// //     );
+// //   }
 
-//   // Fetch crops (and farmers) on mount
-//   useEffect(() => {
-//   const initializeData = async () => {
-//     setRefreshing(true);
-//     try {
-//       await fetchCropsByIds(BASE_URL);
-//       toast.success("Farmers data loaded successfully!");
-//     } catch (err) {
-//       toast.error("Failed to fetch from API, using cached data.");
-//     } finally {
-//       setRefreshing(false);
-//     }
-//   };
-//   initializeData();
-// }, [fetchCropsByIds, BASE_URL]);
+// //   return (
+// //     <div className="p-4 max-w-7xl mx-auto">
+// //       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
+// //         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
 
-//   // Convert farmersData object to array and filter
-//   useEffect(() => {
-//     const farmersArray = Object.values(farmersData); // ✅ object -> array
-//     const filtered = farmersArray.filter((farmer) => {
-//       const matchesSearch =
-//         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
-//       return matchesSearch;
-//     });
-//     setFilteredFarmers(filtered);
-//   }, [searchTerm, farmersData]);
+// //         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+// //           <div className="relative flex-grow">
+// //             <input
+// //               type="text"
+// //               placeholder="Search by name, village or district..."
+// //               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+// //               value={searchTerm}
+// //               onChange={(e) => setSearchTerm(e.target.value)}
+// //             />
+// //             {searchTerm && (
+// //               <button
+// //                 onClick={() => setSearchTerm("")}
+// //                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+// //               >
+// //                 <X className="h-5 w-5" />
+// //               </button>
+// //             )}
+// //           </div>
+// //           <button
+// //             onClick={handleRefresh}
+// //             disabled={refreshing}
+// //             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+// //           >
+// //             <RefreshCw
+// //               className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
+// //             />
+// //             Refresh
+// //           </button>
+// //         </div>
+// //       </div>
 
-//   const handleRefresh = async () => {
-//     try {
-//       setRefreshing(true);
-//       await fetchCropsByIds(BASE_URL);
-//       toast.success("Data refreshed successfully!");
-//     } catch (err) {
-//       toast.error("Failed to refresh data.");
-//     } finally {
-//       setRefreshing(false);
-//     }
-//   };
+// //       {/* Only farmers who have crops */}
+// //       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
 
-//   if (loading) {
-//     return (
-//       <div className="flex justify-center items-center h-screen">
-//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-//         <p className="ml-4 text-gray-600">Loading farmers...</p>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="p-4 max-w-7xl mx-auto">
-//         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-//           Farmers Directory
-//         </h1>
-//         <div className="bg-red-50 border-l-4 border-red-500 p-4">
-//           <div className="flex">
-//             <div className="flex-shrink-0">
-//               <X className="h-5 w-5 text-red-500" />
-//             </div>
-//             <div className="ml-3">
-//               <p className="text-sm text-red-700">{error}</p>
-//               <button
-//                 onClick={handleRefresh}
-//                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
-//               >
-//                 Try again
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="p-4 max-w-7xl mx-auto">
-//       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
-//         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
-
-//         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-//           <div className="relative flex-grow">
-//             <input
-//               type="text"
-//               placeholder="Search by name, village or district..."
-//               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//             />
-//             {searchTerm && (
-//               <button
-//                 onClick={() => setSearchTerm("")}
-//                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-//               >
-//                 <X className="h-5 w-5" />
-//               </button>
-//             )}
-//           </div>
-//           <button
-//             onClick={handleRefresh}
-//             disabled={refreshing}
-//             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-//           >
-//             <RefreshCw
-//               className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
-//             />
-//             Refresh
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* ✅ Only farmers who have crops */}
-//       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
-
-//       <GoToTopButton />
-//     </div>
-//   );
-// }
-
+// //       <GoToTopButton />
+// //     </div>
+// //   );
+// // }
 
 
 
@@ -474,158 +553,317 @@ export default function FarmersPage() {
 
 
 
-// "use client";
-// import { useState, useEffect } from "react";
-// import FarmerCard from "@/components/ui/FarmerCard";
-// import { X, RefreshCw } from "lucide-react";
-// import GoToTopButton from "@/components/ui/GoToTopButton";
-// import { toast } from "sonner";
+// // "use client";
+// // import { useState, useEffect } from "react";
+// // import FarmerCard from "@/components/ui/FarmerCard";
+// // import { X, RefreshCw } from "lucide-react";
+// // import GoToTopButton from "@/components/ui/GoToTopButton";
+// // import { toast } from "sonner";
 
-// import { useCropStore } from "@/stores/cropStore"; // ✅ yaha se lena hai
-// import { useUserDataStore } from "@/stores/userDataStore";
+// // import { useCropStore } from "@/stores/cropStore"; // ✅ yaha se lena hai
+// // import { useUserDataStore } from "@/stores/userDataStore";
 
 
-// export default function FarmersPage() {
-//   const {
-//     farmers,
-//     crops,
-//     fetchAllFarmers,
-//     shouldRefresh,
-//     loading,
-//     error,
-//   } = useCropStore(); // ✅ switch to cropStore
+// // export default function FarmersPage() {
+// //   const {
+// //     farmersData, // ✅ cropStore me ye object hai
+// //     crops,
+// //     fetchCropsByIds,
+// //     shouldRefresh,
+// //     loading,
+// //     error,
+// //   } = useCropStore(); // ✅ switch to cropStore
 
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [filteredFarmers, setFilteredFarmers] = useState([]);
-//   const [refreshing, setRefreshing] = useState(false);
+// //   const [searchTerm, setSearchTerm] = useState("");
+// //   const [filteredFarmers, setFilteredFarmers] = useState([]);
+// //   const [refreshing, setRefreshing] = useState(false);
 
-//   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-//   const { token } = useUserDataStore(); // ✅ get token from zustand store
+// //   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+// //   const { token } = useUserDataStore(); // ✅ get token from zustand store
 
-//   // Fetch farmers on mount
-//   useEffect(() => {
-//     const initializeData = async () => {
-//       if (shouldRefresh()) {
-//         try {
-//           setRefreshing(true);
-//           await fetchAllFarmers(token, BASE_URL);
-//           toast.success("Farmers data loaded successfully!");
-//         } catch (err) {
-//           toast.error("Failed to fetch farmers.");
-//         } finally {
-//           setRefreshing(false);
-//         }
-//       }
-//     };
+// //   // Fetch crops (and farmers) on mount
+// //   useEffect(() => {
+// //   const initializeData = async () => {
+// //     setRefreshing(true);
+// //     try {
+// //       await fetchCropsByIds(BASE_URL);
+// //       toast.success("Farmers data loaded successfully!");
+// //     } catch (err) {
+// //       toast.error("Failed to fetch from API, using cached data.");
+// //     } finally {
+// //       setRefreshing(false);
+// //     }
+// //   };
+// //   initializeData();
+// // }, [fetchCropsByIds, BASE_URL]);
 
-//     initializeData();
-//   }, [fetchAllFarmers, shouldRefresh, BASE_URL, token]);
+// //   // Convert farmersData object to array and filter
+// //   useEffect(() => {
+// //     const farmersArray = Object.values(farmersData); // ✅ object -> array
+// //     const filtered = farmersArray.filter((farmer) => {
+// //       const matchesSearch =
+// //         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// //         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// //         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
+// //       return matchesSearch;
+// //     });
+// //     setFilteredFarmers(filtered);
+// //   }, [searchTerm, farmersData]);
 
-//   // Filter farmers based on search term
-//   useEffect(() => {
+// //   const handleRefresh = async () => {
+// //     try {
+// //       setRefreshing(true);
+// //       await fetchCropsByIds(BASE_URL);
+// //       toast.success("Data refreshed successfully!");
+// //     } catch (err) {
+// //       toast.error("Failed to refresh data.");
+// //     } finally {
+// //       setRefreshing(false);
+// //     }
+// //   };
+
+// //   if (loading) {
+// //     return (
+// //       <div className="flex justify-center items-center h-screen">
+// //         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+// //         <p className="ml-4 text-gray-600">Loading farmers...</p>
+// //       </div>
+// //     );
+// //   }
+
+// //   if (error) {
+// //     return (
+// //       <div className="p-4 max-w-7xl mx-auto">
+// //         <h1 className="text-3xl font-bold text-gray-900 mb-4">
+// //           Farmers Directory
+// //         </h1>
+// //         <div className="bg-red-50 border-l-4 border-red-500 p-4">
+// //           <div className="flex">
+// //             <div className="flex-shrink-0">
+// //               <X className="h-5 w-5 text-red-500" />
+// //             </div>
+// //             <div className="ml-3">
+// //               <p className="text-sm text-red-700">{error}</p>
+// //               <button
+// //                 onClick={handleRefresh}
+// //                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
+// //               >
+// //                 Try again
+// //               </button>
+// //             </div>
+// //           </div>
+// //         </div>
+// //       </div>
+// //     );
+// //   }
+
+// //   return (
+// //     <div className="p-4 max-w-7xl mx-auto">
+// //       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
+// //         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
+
+// //         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+// //           <div className="relative flex-grow">
+// //             <input
+// //               type="text"
+// //               placeholder="Search by name, village or district..."
+// //               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+// //               value={searchTerm}
+// //               onChange={(e) => setSearchTerm(e.target.value)}
+// //             />
+// //             {searchTerm && (
+// //               <button
+// //                 onClick={() => setSearchTerm("")}
+// //                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+// //               >
+// //                 <X className="h-5 w-5" />
+// //               </button>
+// //             )}
+// //           </div>
+// //           <button
+// //             onClick={handleRefresh}
+// //             disabled={refreshing}
+// //             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+// //           >
+// //             <RefreshCw
+// //               className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
+// //             />
+// //             Refresh
+// //           </button>
+// //         </div>
+// //       </div>
+
+// //       {/* ✅ Only farmers who have crops */}
+// //       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
+
+// //       <GoToTopButton />
+// //     </div>
+// //   );
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // "use client";
+// // import { useState, useEffect } from "react";
+// // import FarmerCard from "@/components/ui/FarmerCard";
+// // import { X, RefreshCw } from "lucide-react";
+// // import GoToTopButton from "@/components/ui/GoToTopButton";
+// // import { toast } from "sonner";
+
+// // import { useCropStore } from "@/stores/cropStore"; // ✅ yaha se lena hai
+// // import { useUserDataStore } from "@/stores/userDataStore";
+
+
+// // export default function FarmersPage() {
+// //   const {
+// //     farmers,
+// //     crops,
+// //     fetchAllFarmers,
+// //     shouldRefresh,
+// //     loading,
+// //     error,
+// //   } = useCropStore(); // ✅ switch to cropStore
+
+// //   const [searchTerm, setSearchTerm] = useState("");
+// //   const [filteredFarmers, setFilteredFarmers] = useState([]);
+// //   const [refreshing, setRefreshing] = useState(false);
+
+// //   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+// //   const { token } = useUserDataStore(); // ✅ get token from zustand store
+
+// //   // Fetch farmers on mount
+// //   useEffect(() => {
+// //     const initializeData = async () => {
+// //       if (shouldRefresh()) {
+// //         try {
+// //           setRefreshing(true);
+// //           await fetchAllFarmers(token, BASE_URL);
+// //           toast.success("Farmers data loaded successfully!");
+// //         } catch (err) {
+// //           toast.error("Failed to fetch farmers.");
+// //         } finally {
+// //           setRefreshing(false);
+// //         }
+// //       }
+// //     };
+
+// //     initializeData();
+// //   }, [fetchAllFarmers, shouldRefresh, BASE_URL, token]);
+
+// //   // Filter farmers based on search term
+// //   useEffect(() => {
     
-//     const filtered = farmers.filter((farmer) => {
-//       const matchesSearch =
-//         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
-//       return matchesSearch;
-//     });
-//     setFilteredFarmers(filtered);
-//   }, [searchTerm, farmers]);
+// //     const filtered = farmers.filter((farmer) => {
+// //       const matchesSearch =
+// //         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// //         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// //         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
+// //       return matchesSearch;
+// //     });
+// //     setFilteredFarmers(filtered);
+// //   }, [searchTerm, farmers]);
 
-//   const handleRefresh = async () => {
-//     try {
-//       setRefreshing(true);
-//       await fetchAllFarmers(token, BASE_URL);
-//       toast.success("Data refreshed successfully!");
-//     } catch (err) {
-//       toast.error("Failed to refresh data.");
-//     } finally {
-//       setRefreshing(false);
-//     }
-//   };
+// //   const handleRefresh = async () => {
+// //     try {
+// //       setRefreshing(true);
+// //       await fetchAllFarmers(token, BASE_URL);
+// //       toast.success("Data refreshed successfully!");
+// //     } catch (err) {
+// //       toast.error("Failed to refresh data.");
+// //     } finally {
+// //       setRefreshing(false);
+// //     }
+// //   };
 
-//   if (loading) {
-//     return (
-//       <div className="flex justify-center items-center h-screen">
-//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-//         <p className="ml-4 text-gray-600">Loading farmers...</p>
-//       </div>
-//     );
-//   }
+// //   if (loading) {
+// //     return (
+// //       <div className="flex justify-center items-center h-screen">
+// //         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+// //         <p className="ml-4 text-gray-600">Loading farmers...</p>
+// //       </div>
+// //     );
+// //   }
 
-//   if (error) {
-//     return (
-//       <div className="p-4 max-w-7xl mx-auto">
-//         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-//           Farmers Directory
-//         </h1>
-//         <div className="bg-red-50 border-l-4 border-red-500 p-4">
-//           <div className="flex">
-//             <div className="flex-shrink-0">
-//               <X className="h-5 w-5 text-red-500" />
-//             </div>
-//             <div className="ml-3">
-//               <p className="text-sm text-red-700">{error}</p>
-//               <button
-//                 onClick={handleRefresh}
-//                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
-//               >
-//                 Try again
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
+// //   if (error) {
+// //     return (
+// //       <div className="p-4 max-w-7xl mx-auto">
+// //         <h1 className="text-3xl font-bold text-gray-900 mb-4">
+// //           Farmers Directory
+// //         </h1>
+// //         <div className="bg-red-50 border-l-4 border-red-500 p-4">
+// //           <div className="flex">
+// //             <div className="flex-shrink-0">
+// //               <X className="h-5 w-5 text-red-500" />
+// //             </div>
+// //             <div className="ml-3">
+// //               <p className="text-sm text-red-700">{error}</p>
+// //               <button
+// //                 onClick={handleRefresh}
+// //                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
+// //               >
+// //                 Try again
+// //               </button>
+// //             </div>
+// //           </div>
+// //         </div>
+// //       </div>
+// //     );
+// //   }
 
-//   return (
-//     <div className="p-4 max-w-7xl mx-auto">
-//       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
-//         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
+// //   return (
+// //     <div className="p-4 max-w-7xl mx-auto">
+// //       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
+// //         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
 
-//         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-//           <div className="relative flex-grow">
-//             <input
-//               type="text"
-//               placeholder="Search by name, village or district..."
-//               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//             />
-//             {searchTerm && (
-//               <button
-//                 onClick={() => setSearchTerm("")}
-//                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-//               >
-//                 <X className="h-5 w-5" />
-//               </button>
-//             )}
-//           </div>
-//           <button
-//             onClick={handleRefresh}
-//             disabled={refreshing}
-//             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-//           >
-//             <RefreshCw
-//               className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
-//             />
-//             Refresh
-//           </button>
-//         </div>
-//       </div>
+// //         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+// //           <div className="relative flex-grow">
+// //             <input
+// //               type="text"
+// //               placeholder="Search by name, village or district..."
+// //               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+// //               value={searchTerm}
+// //               onChange={(e) => setSearchTerm(e.target.value)}
+// //             />
+// //             {searchTerm && (
+// //               <button
+// //                 onClick={() => setSearchTerm("")}
+// //                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+// //               >
+// //                 <X className="h-5 w-5" />
+// //               </button>
+// //             )}
+// //           </div>
+// //           <button
+// //             onClick={handleRefresh}
+// //             disabled={refreshing}
+// //             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+// //           >
+// //             <RefreshCw
+// //               className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
+// //             />
+// //             Refresh
+// //           </button>
+// //         </div>
+// //       </div>
 
-//       {/* ✅ Now pulls farmers & crops from farmerStore */}
-//       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
+// //       {/* ✅ Now pulls farmers & crops from farmerStore */}
+// //       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
 
-//       <GoToTopButton />
-//     </div>
-//   );
-// }
-
-
+// //       <GoToTopButton />
+// //     </div>
+// //   );
+// // }
 
 
 
@@ -639,141 +877,143 @@ export default function FarmersPage() {
 
 
 
-// "use client";
-// import { useState, useEffect } from "react";
-// import FarmerCard from "@/components/ui/FarmerCard";
-// import { X, RefreshCw } from "lucide-react";
-// import GoToTopButton from "@/components/ui/GoToTopButton";
-// import { toast } from "sonner";
-// import { useCropStore } from "@/stores/cropStore";
 
-// export default function FarmersPage() {
-//   const { crops, farmersData, fetchCropsByIds, shouldRefresh, loading, error } = useCropStore();
-//   const [farmers, setFarmers] = useState([]);
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [filteredFarmers, setFilteredFarmers] = useState([]);
-//   const [refreshing, setRefreshing] = useState(false);
 
-//   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+// // "use client";
+// // import { useState, useEffect } from "react";
+// // import FarmerCard from "@/components/ui/FarmerCard";
+// // import { X, RefreshCw } from "lucide-react";
+// // import GoToTopButton from "@/components/ui/GoToTopButton";
+// // import { toast } from "sonner";
+// // import { useCropStore } from "@/stores/cropStore";
 
-//   // Fetch data from cropStore
-//   useEffect(() => {
-//     const initializeData = async () => {
-//       if (shouldRefresh()) {
-//         try {
-//           setRefreshing(true);
-//           await fetchCropsByIds(BASE_URL);
-//           toast.success("Data loaded successfully!");
-//         } catch (err) {
-//           toast.error("Failed to fetch data.");
-//         } finally {
-//           setRefreshing(false);
-//         }
-//       }
-//     };
+// // export default function FarmersPage() {
+// //   const { crops, farmersData, fetchCropsByIds, shouldRefresh, loading, error } = useCropStore();
+// //   const [farmers, setFarmers] = useState([]);
+// //   const [searchTerm, setSearchTerm] = useState("");
+// //   const [filteredFarmers, setFilteredFarmers] = useState([]);
+// //   const [refreshing, setRefreshing] = useState(false);
 
-//     initializeData();
-//   }, [fetchCropsByIds, shouldRefresh, BASE_URL]);
+// //   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
-//   // Update farmers list when store data changes
-//   useEffect(() => {
-//     setFarmers(Object.values(farmersData));
-//   }, [farmersData]);
+// //   // Fetch data from cropStore
+// //   useEffect(() => {
+// //     const initializeData = async () => {
+// //       if (shouldRefresh()) {
+// //         try {
+// //           setRefreshing(true);
+// //           await fetchCropsByIds(BASE_URL);
+// //           toast.success("Data loaded successfully!");
+// //         } catch (err) {
+// //           toast.error("Failed to fetch data.");
+// //         } finally {
+// //           setRefreshing(false);
+// //         }
+// //       }
+// //     };
 
-//   // Filter farmers based on search term
-//   useEffect(() => {
-//     const filtered = farmers.filter((farmer) => {
-//       const matchesSearch =
-//         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
-//       return matchesSearch;
-//     });
-//     setFilteredFarmers(filtered);
-//   }, [searchTerm, farmers]);
+// //     initializeData();
+// //   }, [fetchCropsByIds, shouldRefresh, BASE_URL]);
 
-//   const handleRefresh = async () => {
-//     try {
-//       setRefreshing(true);
-//       await fetchCropsByIds(BASE_URL);
-//       toast.success("Data refreshed successfully!");
-//     } catch (err) {
-//       toast.error("Failed to refresh data.");
-//     } finally {
-//       setRefreshing(false);
-//     }
-//   };
+// //   // Update farmers list when store data changes
+// //   useEffect(() => {
+// //     setFarmers(Object.values(farmersData));
+// //   }, [farmersData]);
 
-//   if (loading) {
-//     return (
-//       <div className="flex justify-center items-center h-screen">
-//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-//         <p className="ml-4 text-gray-600">Loading farmers...</p>
-//       </div>
-//     );
-//   }
+// //   // Filter farmers based on search term
+// //   useEffect(() => {
+// //     const filtered = farmers.filter((farmer) => {
+// //       const matchesSearch =
+// //         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// //         farmer.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// //         farmer.district.toLowerCase().includes(searchTerm.toLowerCase());
+// //       return matchesSearch;
+// //     });
+// //     setFilteredFarmers(filtered);
+// //   }, [searchTerm, farmers]);
 
-//   if (error) {
-//     return (
-//       <div className="p-4 max-w-7xl mx-auto">
-//         <h1 className="text-3xl font-bold text-gray-900 mb-4">Farmers Directory</h1>
-//         <div className="bg-red-50 border-l-4 border-red-500 p-4">
-//           <div className="flex">
-//             <div className="flex-shrink-0">
-//               <X className="h-5 w-5 text-red-500" />
-//             </div>
-//             <div className="ml-3">
-//               <p className="text-sm text-red-700">{error}</p>
-//               <button
-//                 onClick={handleRefresh}
-//                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
-//               >
-//                 Try again
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
+// //   const handleRefresh = async () => {
+// //     try {
+// //       setRefreshing(true);
+// //       await fetchCropsByIds(BASE_URL);
+// //       toast.success("Data refreshed successfully!");
+// //     } catch (err) {
+// //       toast.error("Failed to refresh data.");
+// //     } finally {
+// //       setRefreshing(false);
+// //     }
+// //   };
 
-//   return (
-//     <div className="p-4 max-w-7xl mx-auto">
-//       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
-//         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
+// //   if (loading) {
+// //     return (
+// //       <div className="flex justify-center items-center h-screen">
+// //         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+// //         <p className="ml-4 text-gray-600">Loading farmers...</p>
+// //       </div>
+// //     );
+// //   }
 
-//         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-//           <div className="relative flex-grow">
-//             <input
-//               type="text"
-//               placeholder="Search by name, village or district..."
-//               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//             />
-//             {searchTerm && (
-//               <button
-//                 onClick={() => setSearchTerm("")}
-//                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-//               >
-//                 <X className="h-5 w-5" />
-//               </button>
-//             )}
-//           </div>
-//           <button
-//             onClick={handleRefresh}
-//             disabled={refreshing}
-//             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-//           >
-//             <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-//             Refresh
-//           </button>
-//         </div>
-//       </div>
+// //   if (error) {
+// //     return (
+// //       <div className="p-4 max-w-7xl mx-auto">
+// //         <h1 className="text-3xl font-bold text-gray-900 mb-4">Farmers Directory</h1>
+// //         <div className="bg-red-50 border-l-4 border-red-500 p-4">
+// //           <div className="flex">
+// //             <div className="flex-shrink-0">
+// //               <X className="h-5 w-5 text-red-500" />
+// //             </div>
+// //             <div className="ml-3">
+// //               <p className="text-sm text-red-700">{error}</p>
+// //               <button
+// //                 onClick={handleRefresh}
+// //                 className="mt-2 text-sm font-medium text-red-700 hover:text-red-600 underline"
+// //               >
+// //                 Try again
+// //               </button>
+// //             </div>
+// //           </div>
+// //         </div>
+// //       </div>
+// //     );
+// //   }
 
-//       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
+// //   return (
+// //     <div className="p-4 max-w-7xl mx-auto">
+// //       <div className="flex flex-col md:flex-row justify-center items-start md:items-center mb-8 gap-10">
+// //         <h1 className="text-3xl font-bold text-gray-900">Farmers Directory</h1>
 
-//       <GoToTopButton />
-//     </div>
-//   );
-// }
+// //         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+// //           <div className="relative flex-grow">
+// //             <input
+// //               type="text"
+// //               placeholder="Search by name, village or district..."
+// //               className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+// //               value={searchTerm}
+// //               onChange={(e) => setSearchTerm(e.target.value)}
+// //             />
+// //             {searchTerm && (
+// //               <button
+// //                 onClick={() => setSearchTerm("")}
+// //                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+// //               >
+// //                 <X className="h-5 w-5" />
+// //               </button>
+// //             )}
+// //           </div>
+// //           <button
+// //             onClick={handleRefresh}
+// //             disabled={refreshing}
+// //             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+// //           >
+// //             <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+// //             Refresh
+// //           </button>
+// //         </div>
+// //       </div>
+
+// //       <FarmerCard farmers={filteredFarmers} type={"Farmer"} crops={crops} />
+
+// //       <GoToTopButton />
+// //     </div>
+// //   );
+// // }
