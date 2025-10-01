@@ -185,7 +185,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Token Information */}
-        <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+        {/* <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
           <p className="font-semibold text-blue-800 flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -206,7 +206,7 @@ export default function ProfilePage() {
           <div className="mt-2 p-3 bg-white rounded text-xs text-gray-600 break-all font-mono border">
             {token?.slice(0, 50)}...
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -19,6 +19,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useUserDataStore } from "@/stores/userDataStore";
 import { useAuth } from "@/context/AuthContext";
+import { useCropStore } from "@/stores/cropStore";
+import { useVerifierStore } from "@/stores/verifierStore";
 
 // Custom hook for detecting outside clicks
 const useOutsideClick = (callback) => {
@@ -46,15 +48,31 @@ export default function DashboardLayout({ children }) {
   const [expandedItems, setExpandedItems] = useState({});
   const [activeItem, setActiveItem] = useState("Dashboard");
   const [activeSubItem, setActiveSubItem] = useState(null);
+  const [layoutInitialized, setLayoutInitialized] = useState(false);
   const router = useRouter();
 
-  const { setUserData, user } = useUserDataStore();
+  const { setUserData, user, token } = useUserDataStore();
   const { logout } = useAuth();
+  
+  // Store hooks for data initialization
+  const { fetchAllCrops, shouldRefresh: shouldRefreshCrops } = useCropStore();
+  const { fetchAllVerifiers, shouldRefresh: shouldRefreshVerifiers } = useVerifierStore();
+  
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
   // Use the custom hook for user dropdown
   const userDropdownRef = useOutsideClick(() => {
     setUserDropdownOpen(false);
   });
+  
+  // Light initialization - only if absolutely needed
+  useEffect(() => {
+    if (!token || layoutInitialized) return;
+    
+    // Just mark as initialized, let individual pages handle their data
+    setLayoutInitialized(true);
+    console.log("✅ Layout: Initialized");
+  }, [token]);
 
   const sidebarItems = [
     { icon: Home, label: "Dashboard", href: "/taluka-officer" },
