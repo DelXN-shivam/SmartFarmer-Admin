@@ -584,6 +584,14 @@ const FarmerDetailOverlay = ({ farmer, onClose }) => {
                       </span>
                     </p>
                   </div>
+                  {crop.rejectedReason && (
+                    <div className="p-3 bg-red-50 rounded-lg shadow-sm border border-red-200">
+                      <Label className="text-sm text-red-600">Rejection Reason</Label>
+                      <p className="font-semibold text-red-800 mt-1">
+                        {crop.rejectedReason}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
