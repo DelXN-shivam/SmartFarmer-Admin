@@ -13,6 +13,8 @@ import {
   ChevronDown,
   ChevronRight,
   Contact,
+  Leaf,
+  UserCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUserDataStore } from "@/stores/userDataStore";
@@ -63,6 +65,32 @@ export default function DashboardLayout({ children }) {
       ],
     },
     {
+      icon: Leaf,
+      label: "Crops",
+      href: "/super-admin/crops/all",
+      subItems: [
+        { label: "All Crops", href: "/super-admin/crop/all" },
+        { label: "All Verified Crops", href: "/super-admin/crop/verified" },
+        { label: "All Pending Crops", href: "/super-admin/crop/pending" },
+        { label: "All Rejected Crops", href: "/super-admin/crop/rejected" },
+      ],
+    },
+    {
+      icon: User,
+      label: "Farmer",
+      href: "/super-admin/farmer/all",
+      subItems: [{ label: "All Farmers", href: "/super-admin/farmer/all" }],
+    },
+    {
+      icon: UserCheck,
+      label: "Verifier",
+      href: "/super-admin/verifier/all",
+      subItems: [
+        { label: "All Verifiers", href: "/super-admin/verifier/all" },
+        { label: "Add Verifier", href: "/super-admin/verifier/add" },
+      ],
+    },
+    {
       icon: BarChart3,
       label: "Analytics",
       href: "/super-admin/analytics",
@@ -72,7 +100,6 @@ export default function DashboardLayout({ children }) {
         { label: "Export", href: "/super-admin/analytics/export" },
       ],
     },
-    // ✅ New Profile section in sidebar
     {
       icon: User,
       label: "Profile",

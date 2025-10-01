@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const personalInfo = [
     { label: "Name", value: user?.name || "N/A" },
     { label: "Email", value: user?.email || "N/A" },
-    { label: "Phone", value: user?.contact || "N/A" },
+    { label: "Phone", value: user?.phone || "N/A" },
     { label: "Age", value: user?.age || "N/A" },
     { label: "Aadhaar Number", value: user?.aadhaarNumber || "N/A" },
   ];
