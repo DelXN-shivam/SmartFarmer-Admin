@@ -7,6 +7,7 @@ import { useUserDataStore } from "@/stores/userDataStore";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useAdminStore } from "@/stores/adminStore";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function Dashboard() {
   const [talukaOfficerCount, setTalukaOfficerCount] = useState(0);
@@ -25,12 +26,7 @@ export default function Dashboard() {
   // Add adminStore
   const { quickRefresh: refreshAdminData, shouldRefresh: shouldRefreshAdmin, talukaOfficers } = useAdminStore();
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
-      logout();
-      setUserData(null);
-    }
-  };
+  // ✅ Logout function - now handled by LogoutButton component
 
   const getTalukaOfficerCount = async () => {
     try {
@@ -232,13 +228,9 @@ export default function Dashboard() {
               <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
+            <LogoutButton variant="header">
               Logout
-            </button>
+            </LogoutButton>
           </div>
         </div>
 

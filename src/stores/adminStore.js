@@ -669,9 +669,14 @@ quickRefresh: async (token, BASE_URL, currentUserRole) => {
             superAdmins: [], 
             talukaOfficers: [], 
             districtOfficers: [], 
-            lastFetched: null 
+            lastFetched: null,
+            loading: false,
+            error: null
           })
         }
+        
+        // Clear from localStorage as well
+        localStorage.removeItem('admin-storage')
       }
     }),
     {

@@ -19,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useUserDataStore } from "@/stores/userDataStore";
 import { useAuth } from "@/context/AuthContext";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -135,13 +136,7 @@ export default function DashboardLayout({ children }) {
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
-  // ✅ Logout function
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
-      logout();
-      setUserData(null); // Clear Zustand store
-    }
-  };
+  // ✅ Logout function - now handled by LogoutButton component
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -299,13 +294,9 @@ export default function DashboardLayout({ children }) {
                       Settings
                     </a>
                     <hr className="my-1" />
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
+                    <LogoutButton variant="dropdown">
                       Sign out
-                    </button>
+                    </LogoutButton>
                   </div>
                 )}
               </div>
