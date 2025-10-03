@@ -154,13 +154,18 @@ export const useCropStore = create(
       },
 
       // Clear store
-      clearStore: () =>
+      clearStore: () => {
         set({
           crops: [],
           farmersData: {},
           verifiersData: {},
           lastFetched: null,
-        }),
+          loading: false,
+          error: null,
+        });
+        // Clear from localStorage as well
+        localStorage.removeItem('crop-storage');
+      },
     }),
     { name: "crop-storage" }
   )

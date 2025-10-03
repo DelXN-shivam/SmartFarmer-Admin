@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { AuthContext } from "@/context/AuthContext";
 import { useCropStore } from "@/stores/cropStore";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function Dashboard() {
   const [DistrictOfficerCount, setDistrictOfficerCount] = useState();
@@ -23,11 +24,7 @@ export default function Dashboard() {
   // Crop Store
   const { crops, farmersData, fetchAllCrops, shouldRefresh } = useCropStore();
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
-      logout();
-    }
-  };
+  // ✅ Logout function - now handled by LogoutButton component
 
   const getDistrictOfficerCount = async () => {
     try {
@@ -154,13 +151,9 @@ export default function Dashboard() {
               <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`} />
               Refresh
             </button>
-            <button
-                          onClick={handleLogout}
-                          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Logout
-                        </button>
+            <LogoutButton variant="header">
+              Logout
+            </LogoutButton>
           </div>
         </div>
 
@@ -242,12 +235,9 @@ export default function Dashboard() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
+              <LogoutButton variant="header">
                 Logout
-              </button>
+              </LogoutButton>
             </div>
           </div>
         </div>

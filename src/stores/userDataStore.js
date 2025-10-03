@@ -47,6 +47,8 @@ export const useUserDataStore = create(
           role: null,
           token: null,
         });
+        // Clear from localStorage as well
+        localStorage.removeItem('user-data-storage');
       },
 
       // Helper getter

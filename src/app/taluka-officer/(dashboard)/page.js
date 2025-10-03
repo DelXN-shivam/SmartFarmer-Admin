@@ -6,6 +6,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useUserDataStore } from "@/stores/userDataStore";
 import { useAuth } from "@/context/AuthContext";
+import LogoutButton from "@/components/LogoutButton";
 import { useRouter } from "next/navigation";
 import { useCropStore } from "@/stores/cropStore";
 import { useVerifierStore } from "@/stores/verifierStore";
@@ -38,12 +39,7 @@ export default function Dashboard() {
     shouldRefresh: shouldRefreshVerifiers,
   } = useVerifierStore();
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
-      logout();
-      setUserData(null);
-    }
-  };
+  // ✅ Logout function - now handled by LogoutButton component
 
   // Farmers count from cropStore
   const getFarmerCount = () => {
@@ -326,13 +322,9 @@ export default function Dashboard() {
               />
               Refresh
             </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
+            <LogoutButton variant="header">
               Logout
-            </button>
+            </LogoutButton>
           </div>
         </div>
 

@@ -101,13 +101,16 @@ export const useFarmerStore = create(
       },
 
       // Clear the store
-      clearStore: () =>
+      clearStore: () => {
         set({
           farmersData: {},
           lastFetched: null,
           loading: false,
           error: null,
-        }),
+        });
+        // Clear from localStorage as well
+        localStorage.removeItem('farmer-storage');
+      },
     }),
     {
       name: "farmer-storage",

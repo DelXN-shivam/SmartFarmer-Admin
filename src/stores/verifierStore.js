@@ -116,7 +116,16 @@ export const useVerifierStore = create(
       },
 
       // Clear store
-      clearStore: () => set({ verifiers: [], lastFetched: null })
+      clearStore: () => {
+        set({ 
+          verifiers: [], 
+          lastFetched: null,
+          loading: false,
+          error: null
+        });
+        // Clear from localStorage as well
+        localStorage.removeItem('verifier-storage');
+      }
     }),
     { name: 'verifier-storage' }
   )
