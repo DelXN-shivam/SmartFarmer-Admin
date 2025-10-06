@@ -215,12 +215,23 @@
 
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { MapPin, Phone, Mail, FileText, CheckCircle, XCircle, Clock, User, Navigation, Eye, X } from "lucide-react"
 
 const FarmerCard = ({ farmers, type, crops }) => {
   const [selectedFarmer, setSelectedFarmer] = useState(null)
+  const [isTableView, setIsTableView] = useState(true)
+  const [filters, setFilters] = useState({
+    name: "",
+    village: "",
+    taluka: "",
+    district: "",
+    pincode: "",
+    contact: "",
+    crops: "",
+    status: "",
+  })
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -273,6 +284,29 @@ const FarmerCard = ({ farmers, type, crops }) => {
   const closeFarmerDetails = () => {
     setSelectedFarmer(null)
   }
+
+  const includesIgnoreCase = (value, query) => {
+    if (!query) return true
+    if (value === undefined || value === null) return false
+    return String(value).toLowerCase().includes(String(query).toLowerCase())
+  }
+
+  const filteredFarmers = useMemo(() => {
+    const list = Array.isArray(farmers) ? farmers : []
+    return list.filter((farmer) => {
+      const cropNames = getCropNames(farmer?.crops || [])
+      return (
+        includesIgnoreCase(farmer?.name, filters.name) &&
+        includesIgnoreCase(farmer?.village, filters.village) &&
+        includesIgnoreCase(farmer?.taluka, filters.taluka) &&
+        includesIgnoreCase(farmer?.district, filters.district) &&
+        includesIgnoreCase(farmer?.pincode, filters.pincode) &&
+        includesIgnoreCase(farmer?.contact, filters.contact) &&
+        includesIgnoreCase(cropNames, filters.crops) &&
+        includesIgnoreCase(farmer?.applicationStatus, filters.status)
+      )
+    })
+  }, [farmers, filters, crops])
 
   const FarmerDetailOverlay = ({ farmer, onClose }) => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -446,14 +480,74 @@ const FarmerCard = ({ farmers, type, crops }) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
-      <p className="text-gray-600 mb-6">
-        Showing {farmers.length} {type == "Farmer" ? "Farmer" : "Verifier"}
-        {farmers.length !== 1 ? "s" : ""}
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-gray-600">
+          Showing {filteredFarmers.length} {type == "Farmer" ? "Farmer" : "Verifier"}
+          {filteredFarmers.length !== 1 ? "s" : ""}
+        </p>
+        <div className="flex items-center gap-2">
+          <button className="border rounded px-3 py-1 text-sm" onClick={() => setIsTableView((v) => !v)}>
+            {isTableView ? "Card View" : "Table View"}
+          </button>
+        </div>
+      </div>
 
-      {/* Grid of Small Cards */}
+      {isTableView ? (
+        <div className="w-full overflow-x-auto rounded-lg border">
+          <table className="min-w-[900px] w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr className="text-left">
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Village</th>
+                <th className="px-3 py-2">Taluka</th>
+                <th className="px-3 py-2">District</th>
+                <th className="px-3 py-2">PIN</th>
+                <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">Crops</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+              <tr className="border-t text-xs">
+                <th className="px-3 py-2"><input value={filters.name} onChange={(e) => setFilters({ ...filters, name: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.village} onChange={(e) => setFilters({ ...filters, village: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.taluka} onChange={(e) => setFilters({ ...filters, taluka: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.pincode} onChange={(e) => setFilters({ ...filters, pincode: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.contact} onChange={(e) => setFilters({ ...filters, contact: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.crops} onChange={(e) => setFilters({ ...filters, crops: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2"><input value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" /></th>
+                <th className="px-3 py-2">
+                  <button className="w-full border rounded px-2 py-1" onClick={() => setFilters({ name: "", village: "", taluka: "", district: "", pincode: "", contact: "", crops: "", status: "" })}>Clear</button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredFarmers.map((farmer) => (
+                <tr key={farmer._id} className="border-t hover:bg-gray-50">
+                  <td className="px-3 py-2 font-medium">{farmer.name || "-"}</td>
+                  <td className="px-3 py-2">{farmer.village || "-"}</td>
+                  <td className="px-3 py-2">{farmer.taluka || "-"}</td>
+                  <td className="px-3 py-2">{farmer.district || "-"}</td>
+                  <td className="px-3 py-2">{farmer.pincode || "-"}</td>
+                  <td className="px-3 py-2">{farmer.contact || "-"}</td>
+                  <td className="px-3 py-2">{getCropNames(farmer.crops || []) || "NA"}</td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(farmer.applicationStatus)}`}>{farmer.applicationStatus || "-"}</span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex gap-2">
+                      <button className="border rounded px-2 py-1 text-xs" onClick={() => openFarmerDetails(farmer)}>View</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+      
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {farmers.map((farmer) => (
+        {filteredFarmers.map((farmer) => (
           <Card
             key={farmer._id}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white border border-gray-200"
@@ -498,6 +592,7 @@ const FarmerCard = ({ farmers, type, crops }) => {
           </Card>
         ))}
       </div>
+      )}
 
       {/* Overlay Modal */}
       {selectedFarmer && <FarmerDetailOverlay farmer={selectedFarmer} onClose={closeFarmerDetails} />}
