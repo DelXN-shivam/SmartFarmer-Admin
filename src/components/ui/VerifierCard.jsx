@@ -219,6 +219,10 @@ const VerifierCard = ({
   const [selectedVerifier, setSelectedVerifier] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isTableView, setIsTableView] = useState(true);
+  const [showSort, setShowSort] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [sortBy, setSortBy] = useState("");
+  const [sortDir, setSortDir] = useState("asc");
   const [filters, setFilters] = useState({
     name: "",
     village: "",
@@ -258,6 +262,34 @@ const VerifierCard = ({
       includesIgnoreCase(v?.applicationStatus, filters.status)
     ));
   }, [verifiers, filters]);
+
+  const sortOptions = [
+    { key: "name", label: "Name" },
+    { key: "village", label: "Village" },
+    { key: "taluka", label: "Taluka" },
+    { key: "district", label: "District" },
+    { key: "pincode", label: "PIN" },
+    { key: "contact", label: "Phone" },
+    { key: "status", label: "Status" },
+  ];
+
+  const getSortableValue = (v, key) => {
+    if (key === "status") return v?.applicationStatus || "";
+    return v?.[key] ?? "";
+  };
+
+  const sortedVerifiers = useMemo(() => {
+    const arr = [...filteredVerifiers];
+    if (!sortBy) return arr;
+    arr.sort((a, b) => {
+      const va = getSortableValue(a, sortBy);
+      const vb = getSortableValue(b, sortBy);
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredVerifiers, sortBy, sortDir]);
 
   const VerifierDetailOverlay = ({ verifier, onClose, onEdit }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -931,27 +963,43 @@ const VerifierCard = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 relative">
         <p className="text-gray-600">
-          Showing {filteredVerifiers.length} {category}
-          {filteredVerifiers.length !== 1 ? "s" : ""}
+          Showing {sortedVerifiers.length} {category}
+          {sortedVerifiers.length !== 1 ? "s" : ""}
         </p>
         <div className="flex items-center gap-2">
-          {/* Sort Button */}
-          <Button variant="outline" onClick={() => setShowSort((v) => !v)}>
-            Sort
-          </Button>
-
-          {/* Filter Button */}
-          <Button variant="outline" onClick={() => setShowFilter((v) => !v)}>
-            Filter
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowSort((v) => !v)}>Sort</Button>
+          <Button variant="outline" onClick={() => setShowFilter(true)}>Filter</Button>
           <Button variant="outline" onClick={() => setIsTableView((v) => !v)}>
             {isTableView ? "Card View" : "Table View"}
           </Button>
         </div>
+
+        {showSort && (
+          <div className="absolute right-0 top-10 z-20 bg-white border rounded shadow p-3 w-64">
+            <div className="mb-2">
+              <label className="block text-xs text-gray-500 mb-1">Sort by</label>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full border rounded px-2 py-1">
+                <option value="">None</option>
+                {sortOptions.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-3">
+              <label className="block text-xs text-gray-500 mb-1">Direction</label>
+              <select value={sortDir} onChange={(e) => setSortDir(e.target.value)} className="w-full border rounded px-2 py-1">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1" size="sm" onClick={() => setShowSort(false)}>Apply</Button>
+              <Button className="flex-1" size="sm" variant="outline" onClick={() => { setSortBy(""); setSortDir("asc"); }}>Clear</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isTableView ? (
@@ -982,7 +1030,7 @@ const VerifierCard = ({
               </tr>
             </thead>
             <tbody>
-              {filteredVerifiers.map((verifier) => (
+              {sortedVerifiers.map((verifier) => (
                 <tr key={verifier._id} className="border-t hover:bg-gray-50">
                   <td className="px-3 py-2 font-medium">{verifier.name || "-"}</td>
                   <td className="px-3 py-2">{verifier.village || "-"}</td>
@@ -1012,7 +1060,7 @@ const VerifierCard = ({
       <>
       {/* Grid of Small Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {filteredVerifiers.map((verifier) => (
+        {sortedVerifiers.map((verifier) => (
           <Card
             key={verifier._id}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white border border-gray-200"
@@ -1069,6 +1117,27 @@ const VerifierCard = ({
           onClose={closeVerifierDetails}
           onEdit={onEdit}
         />
+      )}
+
+      {showFilter && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowFilter(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-3">Filter Verifiers</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input className="border rounded px-2 py-1" placeholder="Name" value={filters.name} onChange={(e) => setFilters({ ...filters, name: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Village" value={filters.village} onChange={(e) => setFilters({ ...filters, village: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Taluka" value={filters.taluka} onChange={(e) => setFilters({ ...filters, taluka: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="District" value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="PIN" value={filters.pincode} onChange={(e) => setFilters({ ...filters, pincode: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Phone" value={filters.contact} onChange={(e) => setFilters({ ...filters, contact: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Status" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button onClick={() => setShowFilter(false)}>Apply</Button>
+              <Button variant="outline" onClick={() => setFilters({ name: "", village: "", taluka: "", district: "", pincode: "", contact: "", status: "" })}>Clear</Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -12,6 +12,10 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [selectedVerifier, setSelectedVerifier] = useState(null);
   const [isTableView, setIsTableView] = useState(true);
+  const [showSort, setShowSort] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [sortBy, setSortBy] = useState("");
+  const [sortDir, setSortDir] = useState("asc");
   const [filters, setFilters] = useState({
     name: "",
     status: "",
@@ -142,6 +146,46 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
       );
     });
   }, [crops, filters]);
+
+  const sortOptions = [
+    { key: "name", label: "Name" },
+    { key: "status", label: "Status" },
+    { key: "area", label: "Area" },
+    { key: "expectedYield", label: "Expected Yield" },
+    { key: "sowingDate", label: "Sowing Date" },
+    { key: "farmerId", label: "Farmer ID" },
+    { key: "verifierId", label: "Verifier ID" },
+    { key: "district", label: "District" },
+    { key: "taluka", label: "Taluka" },
+  ];
+
+  const getSortableValue = (crop, key) => {
+    switch (key) {
+      case "name": return crop?.name || "";
+      case "status": return crop?.applicationStatus || "";
+      case "area": return crop?.area?.value ?? "";
+      case "expectedYield": return crop?.expectedYield?.value ?? "";
+      case "sowingDate": return crop?.sowingDate ? new Date(crop.sowingDate).getTime() : 0;
+      case "farmerId": return crop?.farmerId || "";
+      case "verifierId": return crop?.verifierId || "";
+      case "district": return crop?.district || "";
+      case "taluka": return crop?.taluka || "";
+      default: return "";
+    }
+  };
+
+  const sortedCrops = useMemo(() => {
+    const arr = [...filteredCrops];
+    if (!sortBy) return arr;
+    arr.sort((a, b) => {
+      const va = getSortableValue(a, sortBy);
+      const vb = getSortableValue(b, sortBy);
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredCrops, sortBy, sortDir]);
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -812,26 +856,46 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 relative">
         <p className="text-gray-600">
-          Showing {filteredCrops.length} crop{filteredCrops.length !== 1 ? "s" : ""}
+          Showing {sortedCrops.length} crop{sortedCrops.length !== 1 ? "s" : ""}
         </p>
         <div className="flex items-center gap-2">
-          {/* Sort Button */}
           <Button variant="outline" onClick={() => setShowSort((v) => !v)}>
             Sort
           </Button>
-
-          {/* Filter Button */}
-          <Button variant="outline" onClick={() => setShowFilter((v) => !v)}>
+          <Button variant="outline" onClick={() => setShowFilter(true)}>
             Filter
           </Button>
-        </div>
-        <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setIsTableView((v) => !v)}>
             {isTableView ? "Card View" : "Table View"}
           </Button>
         </div>
+
+        {showSort && (
+          <div className="absolute right-0 top-10 z-20 bg-white border rounded shadow p-3 w-64">
+            <div className="mb-2">
+              <label className="block text-xs text-gray-500 mb-1">Sort by</label>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full border rounded px-2 py-1">
+                <option value="">None</option>
+                {sortOptions.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-3">
+              <label className="block text-xs text-gray-500 mb-1">Direction</label>
+              <select value={sortDir} onChange={(e) => setSortDir(e.target.value)} className="w-full border rounded px-2 py-1">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1" size="sm" onClick={() => setShowSort(false)}>Apply</Button>
+              <Button className="flex-1" size="sm" variant="outline" onClick={() => { setSortBy(""); setSortDir("asc"); }}>Clear</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isTableView ? (
@@ -884,7 +948,7 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredCrops.map((crop) => {
+              {sortedCrops.map((crop) => {
                 const areaStr = crop?.area ? `${crop.area.value ?? ""} ${crop.area.unit ?? ""}` : "-";
                 const yieldStr = crop?.expectedYield ? `${crop.expectedYield.value ?? ""} ${crop.expectedYield.unit ?? ""}` : "-";
                 return (
@@ -919,7 +983,7 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCrops.map((crop) => (
+          {sortedCrops.map((crop) => (
             <Card
               key={crop._id}
               className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white border border-green-100 overflow-hidden"
@@ -1022,6 +1086,28 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
       )}
 
       {/* Overlay Modals */}
+      {showFilter && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowFilter(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-3">Filter Crops</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input className="border rounded px-2 py-1" placeholder="Name" value={filters.name} onChange={(e) => setFilters({ ...filters, name: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Status" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Area" value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Expected Yield" value={filters.expectedYield} onChange={(e) => setFilters({ ...filters, expectedYield: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Sowing Date" value={filters.sowingDate} onChange={(e) => setFilters({ ...filters, sowingDate: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Farmer ID" value={filters.farmerId} onChange={(e) => setFilters({ ...filters, farmerId: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Verifier ID" value={filters.verifierId} onChange={(e) => setFilters({ ...filters, verifierId: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="District" value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Taluka" value={filters.taluka} onChange={(e) => setFilters({ ...filters, taluka: e.target.value })} />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button onClick={() => setShowFilter(false)}>Apply</Button>
+              <Button variant="outline" onClick={() => setFilters({ name: "", status: "", area: "", expectedYield: "", sowingDate: "", farmerId: "", verifierId: "", district: "", taluka: "" })}>Clear</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {selectedCrop && (
         <CropDetailOverlay crop={selectedCrop} onClose={closeCropDetails} />
       )}
