@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { X, Calendar, MapPin, Package, Ruler, Sprout, User, ShieldCheck, Mail, Phone, Map, IdCard, Award, CheckCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,22 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [selectedVerifier, setSelectedVerifier] = useState(null);
+  const [isTableView, setIsTableView] = useState(true);
+  const [showSort, setShowSort] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [sortBy, setSortBy] = useState("");
+  const [sortDir, setSortDir] = useState("asc");
+  const [filters, setFilters] = useState({
+    name: "",
+    status: "",
+    area: "",
+    expectedYield: "",
+    sowingDate: "",
+    farmerId: "",
+    verifierId: "",
+    district: "",
+    taluka: "",
+  });
 
   const openCropDetails = (crop) => setSelectedCrop(crop);
   const closeCropDetails = () => setSelectedCrop(null);
@@ -104,6 +120,72 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
       year: "numeric",
     });
   };
+
+  const includesIgnoreCase = (value, query) => {
+    if (!query) return true;
+    if (value === undefined || value === null) return false;
+    return String(value).toLowerCase().includes(String(query).toLowerCase());
+  };
+
+  const filteredCrops = useMemo(() => {
+    if (!Array.isArray(crops)) return [];
+    return crops.filter((crop) => {
+      const areaStr = crop?.area ? `${crop.area.value ?? ""} ${crop.area.unit ?? ""}` : "";
+      const yieldStr = crop?.expectedYield ? `${crop.expectedYield.value ?? ""} ${crop.expectedYield.unit ?? ""}` : "";
+      const sowStr = crop?.sowingDate ? formatDate(crop.sowingDate) : "";
+      return (
+        includesIgnoreCase(crop?.name, filters.name) &&
+        includesIgnoreCase(crop?.applicationStatus, filters.status) &&
+        includesIgnoreCase(areaStr, filters.area) &&
+        includesIgnoreCase(yieldStr, filters.expectedYield) &&
+        includesIgnoreCase(sowStr, filters.sowingDate) &&
+        includesIgnoreCase(crop?.farmerId, filters.farmerId) &&
+        includesIgnoreCase(crop?.verifierId, filters.verifierId) &&
+        includesIgnoreCase(crop?.district, filters.district) &&
+        includesIgnoreCase(crop?.taluka, filters.taluka)
+      );
+    });
+  }, [crops, filters]);
+
+  const sortOptions = [
+    { key: "name", label: "Name" },
+    { key: "status", label: "Status" },
+    { key: "area", label: "Area" },
+    { key: "expectedYield", label: "Expected Yield" },
+    { key: "sowingDate", label: "Sowing Date" },
+    { key: "farmerId", label: "Farmer ID" },
+    { key: "verifierId", label: "Verifier ID" },
+    { key: "district", label: "District" },
+    { key: "taluka", label: "Taluka" },
+  ];
+
+  const getSortableValue = (crop, key) => {
+    switch (key) {
+      case "name": return crop?.name || "";
+      case "status": return crop?.applicationStatus || "";
+      case "area": return crop?.area?.value ?? "";
+      case "expectedYield": return crop?.expectedYield?.value ?? "";
+      case "sowingDate": return crop?.sowingDate ? new Date(crop.sowingDate).getTime() : 0;
+      case "farmerId": return crop?.farmerId || "";
+      case "verifierId": return crop?.verifierId || "";
+      case "district": return crop?.district || "";
+      case "taluka": return crop?.taluka || "";
+      default: return "";
+    }
+  };
+
+  const sortedCrops = useMemo(() => {
+    const arr = [...filteredCrops];
+    if (!sortBy) return arr;
+    arr.sort((a, b) => {
+      const va = getSortableValue(a, sortBy);
+      const vb = getSortableValue(b, sortBy);
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredCrops, sortBy, sortDir]);
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -274,77 +356,77 @@ const CropCard = ({ crops, farmersData = {}, verifiersData = {} }) => {
   //   );
   // };
   // Farmer Detail Overlay Component
-const FarmerDetailOverlay = ({ farmer, onClose }) => {
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="relative bg-gradient-to-r from-blue-800 to-blue-900 p-6">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative flex items-center justify-between text-white">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                <User className="w-8 h-8 text-white" />
+  const FarmerDetailOverlay = ({ farmer, onClose }) => {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="relative bg-gradient-to-r from-blue-800 to-blue-900 p-6">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative flex items-center justify-between text-white">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold">{farmer.name}</h2>
+                  <p className="text-white/90 text-sm">
+                    Farmer ID: {farmer._id?.slice(-8)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-3xl font-bold">{farmer.name}</h2>
-                <p className="text-white/90 text-sm">
-                  Farmer ID: {farmer._id?.slice(-8)}
-                </p>
+              <button
+                onClick={onClose}
+                className="p-3 hover:bg-white/20 rounded-full transition-all duration-200 backdrop-blur-sm"
+                aria-label="Close details"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            {/* Personal Information */}
+            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* <p><span className="font-semibold">Email:</span> {farmer.email}</p> */}
+                <p><span className="font-semibold">Phone:</span> {farmer.contact}</p>
+                <p><span className="font-semibold">Aadhaar Number:</span> {farmer.aadhaarNumber || "N/A"}</p>
+                <p><span className="font-semibold">Age:</span> {farmer.age || "N/A"}</p>
+                <p><span className="font-semibold">Status:</span> {farmer.applicationStatus || "Active"}</p>
+                <p><span className="font-semibold">Created At:</span> {farmer.createdAt ? new Date(farmer.createdAt).toLocaleString() : "N/A"}</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-3 hover:bg-white/20 rounded-full transition-all duration-200 backdrop-blur-sm"
-              aria-label="Close details"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-          </div>
-        </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          {/* Personal Information */}
-          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* <p><span className="font-semibold">Email:</span> {farmer.email}</p> */}
-              <p><span className="font-semibold">Phone:</span> {farmer.contact}</p>
-              <p><span className="font-semibold">Aadhaar Number:</span> {farmer.aadhaarNumber || "N/A"}</p>
-              <p><span className="font-semibold">Age:</span> {farmer.age || "N/A"}</p>
-              <p><span className="font-semibold">Status:</span> {farmer.applicationStatus || "Active"}</p>
-              <p><span className="font-semibold">Created At:</span> {farmer.createdAt ? new Date(farmer.createdAt).toLocaleString() : "N/A"}</p>
+            {/* Farm Statistics */}
+            <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Farm Statistics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <p><span className="font-semibold">Total Crops:</span> {farmer.cropId?.length || 0}</p>
+                <p><span className="font-semibold">Verified Crops:</span> {farmer.verifiedCrops || 0}</p>
+                <p><span className="font-semibold">Verification Rate:</span> {farmer.totalCrops ? Math.round((farmer.verifiedCrops / farmer.totalCrops) * 100) : 0}%</p>
+              </div>
             </div>
-          </div>
 
-          {/* Farm Statistics */}
-          <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Farm Statistics</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <p><span className="font-semibold">Total Crops:</span> {farmer.cropId?.length || 0}</p>
-              <p><span className="font-semibold">Verified Crops:</span> {farmer.verifiedCrops || 0}</p>
-              <p><span className="font-semibold">Verification Rate:</span> {farmer.totalCrops ? Math.round((farmer.verifiedCrops / farmer.totalCrops) * 100) : 0}%</p>
-            </div>
-          </div>
-
-          {/* Address Information */}
-          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <p><span className="font-semibold">Village:</span> {farmer.village}</p>
-              <p><span className="font-semibold">Landmark:</span> {farmer.landMark}</p>
-              <p><span className="font-semibold">Taluka:</span> {farmer.taluka}</p>
-              <p><span className="font-semibold">District:</span> {farmer.district}</p>
-              <p><span className="font-semibold">State:</span> {farmer.state}</p>
-              <p><span className="font-semibold">Pincode:</span> {farmer.pincode}</p>
+            {/* Address Information */}
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Address</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <p><span className="font-semibold">Village:</span> {farmer.village}</p>
+                <p><span className="font-semibold">Landmark:</span> {farmer.landMark}</p>
+                <p><span className="font-semibold">Taluka:</span> {farmer.taluka}</p>
+                <p><span className="font-semibold">District:</span> {farmer.district}</p>
+                <p><span className="font-semibold">State:</span> {farmer.state}</p>
+                <p><span className="font-semibold">Pincode:</span> {farmer.pincode}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 
   // Verifier Detail Overlay Component
@@ -508,13 +590,12 @@ const FarmerDetailOverlay = ({ farmer, onClose }) => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div
-            className={`relative p-6 ${
-              crop.applicationStatus === "verified"
+            className={`relative p-6 ${crop.applicationStatus === "verified"
                 ? "bg-gradient-to-r from-green-800 to-green-900"
                 : crop.applicationStatus === "pending"
-                ? "bg-gradient-to-r from-yellow-700 to-yellow-800"
-                : "bg-gradient-to-r from-red-700 to-red-900"
-            }`}
+                  ? "bg-gradient-to-r from-yellow-700 to-yellow-800"
+                  : "bg-gradient-to-r from-red-700 to-red-900"
+              }`}
           >
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="relative flex items-center justify-between text-white">
@@ -690,7 +771,7 @@ const FarmerDetailOverlay = ({ farmer, onClose }) => {
                   <Button
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                     onClick={() =>
-                      handleViewFarmer(crop, { stopPropagation: () => {} })
+                      handleViewFarmer(crop, { stopPropagation: () => { } })
                     }
                   >
                     <User className="w-4 h-4 mr-2" />
@@ -721,7 +802,7 @@ const FarmerDetailOverlay = ({ farmer, onClose }) => {
                     disabled={!crop.verifierId}
                     onClick={() =>
                       crop.verifierId &&
-                      handleViewVerifier(crop, { stopPropagation: () => {} })
+                      handleViewVerifier(crop, { stopPropagation: () => { } })
                     }
                   >
                     <ShieldCheck className="w-4 h-4 mr-2" />
@@ -775,113 +856,258 @@ const FarmerDetailOverlay = ({ farmer, onClose }) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
-      <p className="text-gray-600 mb-6">
-        Showing {crops.length} crop{crops.length !== 1 ? "s" : ""}
-      </p>
-      {/* Grid of Crop Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {crops.map((crop) => (
-          <Card
-            key={crop._id}
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white border border-green-100 overflow-hidden"
-            onClick={() => openCropDetails(crop)}
-          >
-            <CardContent className="p-0">
-              {/* Image Section */}
-              {crop.images && crop.images.length > 0 && (
-                <div className="h-40 w-full overflow-hidden">
-                  <img
-                    src={crop.images[0]}
-                    alt={crop.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+      <div className="flex items-center justify-between mb-4 relative">
+        <p className="text-gray-600">
+          Showing {sortedCrops.length} crop{sortedCrops.length !== 1 ? "s" : ""}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowSort((v) => !v)}>
+            Sort
+          </Button>
+          <Button variant="outline" onClick={() => setShowFilter(true)}>
+            Filter
+          </Button>
+          <Button variant="outline" onClick={() => setIsTableView((v) => !v)}>
+            {isTableView ? "Card View" : "Table View"}
+          </Button>
+        </div>
 
-              {/* Content Section */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-bold text-lg text-gray-900 truncate">
-                    {crop.name}
-                  </h3>
-                  <Badge
-                    className={`ml-2 ${getStatusBadgeClass(
-                      crop.applicationStatus
-                    )}`}
-                  >
-                    {crop.applicationStatus}
-                  </Badge>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Ruler className="w-4 h-4 mr-2 text-green-600" />
-                    <span>
-                      {crop.area?.value} {crop.area?.unit}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Package className="w-4 h-4 mr-2 text-amber-600" />
-                    <span>
-                      Yield: {crop.expectedYield?.value}{" "}
-                      {crop.expectedYield?.unit}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-                    <span>
-                      Sown:{" "}
-                      {crop.sowingDate ? formatDate(crop.sowingDate) : "N/A"}
-                    </span>
-                  </div>
-
-                  {crop.latitude && crop.longitude && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="w-4 h-4 mr-2 text-red-600" />
-                      <span>Location tracked</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Buttons Section */}
-                <div className="mt-4 space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full border-green-300 text-green-700 hover:bg-green-50"
-                  >
-                    View Details
-                  </Button>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      className="text-xs border-blue-300 text-blue-700 hover:bg-blue-50 h-9"
-                      onClick={(e) => handleViewFarmer(crop, e)}
-                    >
-                      <User className="w-3 h-3 mr-1" />
-                      Farmer
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="text-xs border-purple-300 text-purple-700 hover:bg-purple-50 h-9"
-                      onClick={(e) => handleViewVerifier(crop, e)}
-                      disabled={!crop.verifierId}
-                    >
-                      <ShieldCheck className="w-3 h-3 mr-1" />
-                      Verifier
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {showSort && (
+          <div className="absolute right-0 top-10 z-20 bg-white border rounded shadow p-3 w-64">
+            <div className="mb-2">
+              <label className="block text-xs text-gray-500 mb-1">Sort by</label>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full border rounded px-2 py-1">
+                <option value="">None</option>
+                {sortOptions.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-3">
+              <label className="block text-xs text-gray-500 mb-1">Direction</label>
+              <select value={sortDir} onChange={(e) => setSortDir(e.target.value)} className="w-full border rounded px-2 py-1">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1" size="sm" onClick={() => setShowSort(false)}>Apply</Button>
+              <Button className="flex-1" size="sm" variant="outline" onClick={() => { setSortBy(""); setSortDir("asc"); }}>Clear</Button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {isTableView ? (
+        <div className="w-full overflow-x-auto rounded-lg border">
+          <table className="min-w-[900px] w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr className="text-left">
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Area</th>
+                <th className="px-3 py-2">Expected Yield</th>
+                <th className="px-3 py-2">Sowing Date</th>
+                <th className="px-3 py-2">Farmer ID</th>
+                <th className="px-3 py-2">Verifier ID</th>
+                <th className="px-3 py-2">District</th>
+                <th className="px-3 py-2">Taluka</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+              <tr className="border-t text-xs">
+                <th className="px-3 py-2">
+                  <input value={filters.name} onChange={(e) => setFilters({ ...filters, name: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.expectedYield} onChange={(e) => setFilters({ ...filters, expectedYield: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.sowingDate} onChange={(e) => setFilters({ ...filters, sowingDate: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.farmerId} onChange={(e) => setFilters({ ...filters, farmerId: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.verifierId} onChange={(e) => setFilters({ ...filters, verifierId: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <input value={filters.taluka} onChange={(e) => setFilters({ ...filters, taluka: e.target.value })} placeholder="Search" className="w-full border rounded px-2 py-1" />
+                </th>
+                <th className="px-3 py-2">
+                  <Button variant="outline" className="w-full" onClick={() => setFilters({ name: "", status: "", area: "", expectedYield: "", sowingDate: "", farmerId: "", verifierId: "", district: "", taluka: "" })}>Clear</Button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedCrops.map((crop) => {
+                const areaStr = crop?.area ? `${crop.area.value ?? ""} ${crop.area.unit ?? ""}` : "-";
+                const yieldStr = crop?.expectedYield ? `${crop.expectedYield.value ?? ""} ${crop.expectedYield.unit ?? ""}` : "-";
+                return (
+                  <tr key={crop._id} className="border-t hover:bg-gray-50">
+                    <td className="px-3 py-2 font-medium">{crop.name || "-"}</td>
+                    <td className="px-3 py-2">
+                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(crop.applicationStatus)}`}>{crop.applicationStatus}</span>
+                    </td>
+                    <td className="px-3 py-2">{areaStr}</td>
+                    <td className="px-3 py-2">{yieldStr}</td>
+                    <td className="px-3 py-2">{crop.sowingDate ? formatDate(crop.sowingDate) : "-"}</td>
+                    <td className="px-3 py-2">{crop.farmerId ? crop.farmerId.slice(-8) : "-"}</td>
+                    <td className="px-3 py-2">{crop.verifierId ? String(crop.verifierId).slice(-8) : "-"}</td>
+                    <td className="px-3 py-2">{crop.district || "-"}</td>
+                    <td className="px-3 py-2">{crop.taluka || "-"}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setSelectedCrop(crop)}>View</Button>
+                        <Button variant="outline" size="sm" onClick={(e) => handleViewFarmer(crop, { stopPropagation: () => { } })}>
+                          <User className="w-3 h-3 mr-1" /> Farmer
+                        </Button>
+                        <Button variant="outline" size="sm" disabled={!crop.verifierId} onClick={(e) => handleViewVerifier(crop, { stopPropagation: () => { } })}>
+                          <ShieldCheck className="w-3 h-3 mr-1" /> Verifier
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {sortedCrops.map((crop) => (
+            <Card
+              key={crop._id}
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white border border-green-100 overflow-hidden"
+              onClick={() => openCropDetails(crop)}
+            >
+              <CardContent className="p-0">
+                {/* Image Section */}
+                {crop.images && crop.images.length > 0 && (
+                  <div className="h-40 w-full overflow-hidden">
+                    <img
+                      src={crop.images[0]}
+                      alt={crop.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                {/* Content Section */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-bold text-lg text-gray-900 truncate">
+                      {crop.name}
+                    </h3>
+                    <Badge
+                      className={`ml-2 ${getStatusBadgeClass(
+                        crop.applicationStatus
+                      )}`}
+                    >
+                      {crop.applicationStatus}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Ruler className="w-4 h-4 mr-2 text-green-600" />
+                      <span>
+                        {crop.area?.value} {crop.area?.unit}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Package className="w-4 h-4 mr-2 text-amber-600" />
+                      <span>
+                        Yield: {crop.expectedYield?.value}{" "}
+                        {crop.expectedYield?.unit}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="w-4 h-4 mr-2 text-blue-600" />
+                      <span>
+                        Sown:{" "}
+                        {crop.sowingDate ? formatDate(crop.sowingDate) : "N/A"}
+                      </span>
+                    </div>
+
+                    {crop.latitude && crop.longitude && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <MapPin className="w-4 h-4 mr-2 text-red-600" />
+                        <span>Location tracked</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Buttons Section */}
+                  <div className="mt-4 space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      View Details
+                    </Button>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        className="text-xs border-blue-300 text-blue-700 hover:bg-blue-50 h-9"
+                        onClick={(e) => handleViewFarmer(crop, e)}
+                      >
+                        <User className="w-3 h-3 mr-1" />
+                        Farmer
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="text-xs border-purple-300 text-purple-700 hover:bg-purple-50 h-9"
+                        onClick={(e) => handleViewVerifier(crop, e)}
+                        disabled={!crop.verifierId}
+                      >
+                        <ShieldCheck className="w-3 h-3 mr-1" />
+                        Verifier
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {/* Overlay Modals */}
+      {showFilter && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowFilter(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-3">Filter Crops</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input className="border rounded px-2 py-1" placeholder="Name" value={filters.name} onChange={(e) => setFilters({ ...filters, name: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Status" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Area" value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Expected Yield" value={filters.expectedYield} onChange={(e) => setFilters({ ...filters, expectedYield: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Sowing Date" value={filters.sowingDate} onChange={(e) => setFilters({ ...filters, sowingDate: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Farmer ID" value={filters.farmerId} onChange={(e) => setFilters({ ...filters, farmerId: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Verifier ID" value={filters.verifierId} onChange={(e) => setFilters({ ...filters, verifierId: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="District" value={filters.district} onChange={(e) => setFilters({ ...filters, district: e.target.value })} />
+              <input className="border rounded px-2 py-1" placeholder="Taluka" value={filters.taluka} onChange={(e) => setFilters({ ...filters, taluka: e.target.value })} />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button onClick={() => setShowFilter(false)}>Apply</Button>
+              <Button variant="outline" onClick={() => setFilters({ name: "", status: "", area: "", expectedYield: "", sowingDate: "", farmerId: "", verifierId: "", district: "", taluka: "" })}>Clear</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {selectedCrop && (
         <CropDetailOverlay crop={selectedCrop} onClose={closeCropDetails} />
       )}
